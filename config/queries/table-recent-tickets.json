@@ -1,0 +1,8 @@
+{
+  "id": "table-recent-tickets",
+  "name": "Most recent tickets",
+  "datasource": "mock",
+  "sql": "SELECT id, subject, customer, priority, status, assignee, created_at FROM tickets ORDER BY created_at DESC LIMIT 20",
+  "timeoutSeconds": 5,
+  "maxRows": 20
+}

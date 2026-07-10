@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panopticon</title>
+    <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<header class="app-header">
+    <div class="brand"><span class="eye">&#9673;</span> Panopticon</div>
+    <select id="dashboard-select" aria-label="Select dashboard"></select>
+    <div class="spacer"></div>
+    <div class="clock" id="clock">--:--:--</div>
+    <a class="nav-link" href="/monitor.html">Monitor mode</a>
+</header>
+
+<div class="dashboard-meta">
+    <h1 id="dashboard-title">Loading&hellip;</h1>
+    <p id="dashboard-desc"></p>
+</div>
+
+<div class="panel-grid" id="panel-grid"></div>
+
+<script src="/js/vendor/echarts.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/charts.js"></script>
+<script src="/js/dashboard.js"></script>
+<script>
+    (async function () {
+        const selectEl = document.getElementById('dashboard-select');
+        const titleEl = document.getElementById('dashboard-title');
+        const descEl = document.getElementById('dashboard-desc');
+        const gridEl = document.getElementById('panel-grid');
+        const clockEl = document.getElementById('clock');
+
+        let controller = null;
+
+        setInterval(() => { clockEl.textContent = new Date().toLocaleTimeString(); }, 1000);
+        clockEl.textContent = new Date().toLocaleTimeString();
+
+        function paramDashboardId() {
+            return new URLSearchParams(location.search).get('dashboard');
+        }
+
+        function setDashboardParam(id) {
+            const url = new URL(location.href);
+            url.searchParams.set('dashboard', id);
+            history.replaceState(null, '', url);
+        }
+
+        async function loadDashboard(id) {
+            if (controller) controller.destroy();
+            const dashboard = await Api.getDashboard(id);
+            selectEl.value = id;
+            setDashboardParam(id);
+            titleEl.textContent = dashboard.title;
+            descEl.textContent = dashboard.description || '';
+            controller = Dashboard.mount(gridEl, dashboard);
+        }
+
+        try {
+            const dashboards = await Api.listDashboards();
+            if (dashboards.length === 0) {
+                titleEl.textContent = 'No dashboards configured';
+                descEl.textContent = 'Add a dashboard JSON file under config/dashboards.';
+                return;
+            }
+            selectEl.innerHTML = dashboards.map((d) => `<option value="${d.id}">${d.title}</option>`).join('');
+            selectEl.addEventListener('change', () => loadDashboard(selectEl.value));
+
+            const initialId = paramDashboardId() && dashboards.some((d) => d.id === paramDashboardId())
+                ? paramDashboardId()
+                : dashboards[0].id;
+            await loadDashboard(initialId);
+        } catch (err) {
+            titleEl.textContent = 'Failed to load dashboards';
+            descEl.textContent = (err && err.message) || String(err);
+        }
+    })();
+</script>
+</body>
+</html>

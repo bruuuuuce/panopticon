@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panopticon — Monitor</title>
+    <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body class="monitor">
+<div class="monitor-bar">
+    <div class="brand"><span class="eye">&#9673;</span> Panopticon</div>
+    <div class="dash-title" id="current-dashboard-title">Loading&hellip;</div>
+    <div class="spacer"></div>
+    <div class="monitor-controls">
+        <button id="btn-prev" title="Previous dashboard">&#8249; Prev</button>
+        <button id="btn-pause" title="Pause rotation">Pause</button>
+        <button id="btn-next" title="Next dashboard">Next &#8250;</button>
+        <a class="nav-link" href="/index.html" style="display:flex;align-items:center;">Exit</a>
+    </div>
+</div>
+<div class="monitor-progress"><div class="monitor-progress-bar" id="progress-bar"></div></div>
+
+<div class="monitor-body">
+    <div class="panel-grid" id="panel-grid"></div>
+</div>
+
+<script src="/js/vendor/echarts.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/charts.js"></script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/monitor.js"></script>
+</body>
+</html>

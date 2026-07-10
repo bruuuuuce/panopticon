@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: panopticon
+  # We manage our own HikariCP datasources per panopticon.datasources.*
+  # (no single primary DataSource / JPA in play).
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+panopticon:
+  config:
+    dashboards-path: config/dashboards
+    queries-path: config/queries
+  datasources:
+    mock:
+      driver-class-name: org.h2.Driver
+      url: "jdbc:h2:mem:panopticon;DB_CLOSE_DELAY=-1"
+      username: sa
+      password: ""
+      max-pool-size: 5
+      init-schema: "classpath:db/mock/schema.sql"
+      init-data: "classpath:db/mock/data.sql"
+
+logging:
+  level:
+    com.panopticon: INFO

@@ -1,0 +1,65 @@
+{
+  "id": "support-ops",
+  "title": "Support Operations Overview",
+  "description": "Live view of ticket volume, backlog and resolution performance.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": true },
+  "panels": [
+    {
+      "id": "kpi-open",
+      "title": "Open Tickets",
+      "type": "KPI",
+      "queryRef": "kpi-open-tickets",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": { "valueField": "open_tickets", "format": "number" }
+    },
+    {
+      "id": "kpi-avg-resolution",
+      "title": "Avg Resolution Time",
+      "type": "KPI",
+      "queryRef": "kpi-avg-resolution",
+      "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "valueField": "avg_resolution_hours", "format": "decimal", "unit": "h" }
+    },
+    {
+      "id": "donut-status",
+      "title": "Tickets by Status",
+      "type": "DONUT_CHART",
+      "queryRef": "donut-tickets-by-status",
+      "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "labelField": "status", "valueField": "ticket_count" }
+    },
+    {
+      "id": "bar-priority",
+      "title": "Tickets by Priority",
+      "type": "BAR_CHART",
+      "queryRef": "bar-tickets-by-priority",
+      "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "xField": "priority", "yField": "ticket_count", "seriesName": "Tickets" }
+    },
+    {
+      "id": "line-created",
+      "title": "Tickets Created (14d)",
+      "type": "LINE_CHART",
+      "queryRef": "line-tickets-per-day",
+      "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 90, "enabled": true },
+      "options": { "xField": "day_bucket", "yField": "ticket_count", "seriesName": "Tickets Created" }
+    },
+    {
+      "id": "table-recent",
+      "title": "Recent Tickets",
+      "type": "TABLE",
+      "queryRef": "table-recent-tickets",
+      "grid": { "row": 3, "col": 1, "rowSpan": 2, "colSpan": 12 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": {
+        "columns": ["id", "subject", "customer", "priority", "status", "assignee", "created_at"]
+      }
+    }
+  ]
+}

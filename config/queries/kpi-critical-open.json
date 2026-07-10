@@ -1,0 +1,8 @@
+{
+  "id": "kpi-critical-open",
+  "name": "Open critical tickets",
+  "datasource": "mock",
+  "sql": "SELECT COUNT(*) AS critical_open FROM tickets WHERE status <> 'CLOSED' AND priority = 'CRITICAL'",
+  "timeoutSeconds": 5,
+  "maxRows": 1
+}

@@ -1,0 +1,396 @@
+/*
+ * Dark enterprise / control-room theme. Colors come from a validated
+ * dark-surface categorical + status palette (contrast + CVD-separation
+ * checked) rather than picked by eye.
+ */
+:root {
+    --page-bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-raised: #212120;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+
+    --series-1: #3987e5;
+    --series-2: #199e70;
+    --series-3: #c98500;
+    --series-4: #008300;
+    --series-5: #9085e9;
+    --series-6: #e66767;
+    --series-7: #d55181;
+    --series-8: #d95926;
+
+    --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+}
+
+a {
+    color: var(--series-1);
+}
+
+/* ---------- App chrome ---------- */
+
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.app-header .brand {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.app-header .brand .eye {
+    color: var(--series-1);
+}
+
+.app-header select {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+}
+
+.app-header .spacer {
+    flex: 1;
+}
+
+.app-header .clock {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+}
+
+.app-header .nav-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+.app-header .nav-link:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.dashboard-meta {
+    padding: 14px 20px 0;
+}
+
+.dashboard-meta h1 {
+    margin: 0 0 2px;
+    font-size: 18px;
+}
+
+.dashboard-meta p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* ---------- Grid ---------- */
+
+.panel-grid {
+    display: grid;
+    gap: 14px;
+    padding: 14px 20px 24px;
+    grid-auto-rows: 150px;
+}
+
+/* ---------- Panel card ---------- */
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    flex: none;
+}
+
+.panel-header .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex: none;
+}
+
+.status-dot.status-ok { background: var(--status-good); }
+.status-dot.status-error { background: var(--status-critical); }
+.status-dot.status-pending {
+    background: var(--text-muted);
+    animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+}
+
+.panel-header .refresh-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.panel-body {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    padding: 12px 14px;
+    overflow: auto;
+}
+
+.panel-body.no-pad {
+    padding: 4px;
+}
+
+.panel-error {
+    color: var(--status-critical);
+    font-size: 12px;
+    padding: 4px 2px;
+}
+
+/* ---------- KPI ---------- */
+
+.kpi-body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.kpi-value {
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--text-primary);
+}
+
+.kpi-unit {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-left: 4px;
+}
+
+.kpi-label {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ---------- Table ---------- */
+
+.panel-table-wrap {
+    height: 100%;
+    overflow: auto;
+}
+
+table.panel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+table.panel-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--gridline);
+    white-space: nowrap;
+}
+
+table.panel-table tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--gridline);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+table.panel-table tbody tr:hover td {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+/* ---------- Chart container ---------- */
+
+.chart-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* ---------- Loading / empty states ---------- */
+
+.panel-loading, .panel-empty {
+    color: var(--text-muted);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+/* ---------- Toast (config/validation errors etc.) ---------- */
+
+.toast {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--surface-raised);
+    border: 1px solid var(--status-critical);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    max-width: 360px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Monitor mode ---------- */
+
+body.monitor {
+    overflow: hidden;
+}
+
+.monitor-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.monitor-bar .brand {
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.monitor-bar .brand .eye {
+    color: var(--series-1);
+}
+
+.monitor-bar .dash-title {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.monitor-bar .spacer {
+    flex: 1;
+}
+
+.monitor-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.monitor-controls button {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.monitor-controls button:hover {
+    border-color: var(--text-secondary);
+}
+
+.monitor-controls button.active {
+    border-color: var(--series-1);
+    color: var(--series-1);
+}
+
+.monitor-progress {
+    height: 3px;
+    background: var(--gridline);
+}
+
+.monitor-progress-bar {
+    height: 100%;
+    background: var(--series-1);
+    width: 0%;
+    transition: width 0.2s linear;
+}
+
+.monitor-body {
+    height: calc(100vh - 47px - 3px);
+    overflow: hidden;
+}
+
+.monitor-body .dashboard-meta {
+    display: none;
+}
+
+.monitor-body .panel-grid {
+    height: 100%;
+}

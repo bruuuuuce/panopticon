@@ -1,0 +1,47 @@
+{
+  "id": "team-workload",
+  "title": "Team Workload & Risk",
+  "description": "Where the open backlog sits today, by owner and by priority.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": true },
+  "panels": [
+    {
+      "id": "kpi-critical-open",
+      "title": "Critical Tickets Open",
+      "type": "KPI",
+      "queryRef": "kpi-critical-open",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": { "valueField": "critical_open", "format": "number" }
+    },
+    {
+      "id": "donut-priority",
+      "title": "Open Tickets by Priority",
+      "type": "DONUT_CHART",
+      "queryRef": "donut-tickets-by-priority",
+      "grid": { "row": 1, "col": 4, "rowSpan": 2, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "labelField": "priority", "valueField": "ticket_count" }
+    },
+    {
+      "id": "bar-assignee",
+      "title": "Open Workload by Assignee",
+      "type": "BAR_CHART",
+      "queryRef": "bar-tickets-by-assignee",
+      "grid": { "row": 1, "col": 8, "rowSpan": 2, "colSpan": 5 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "xField": "assignee", "yField": "ticket_count", "seriesName": "Open Tickets" }
+    },
+    {
+      "id": "table-recent",
+      "title": "Recent Tickets",
+      "type": "TABLE",
+      "queryRef": "table-recent-tickets",
+      "grid": { "row": 3, "col": 1, "rowSpan": 2, "colSpan": 12 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": {
+        "columns": ["id", "subject", "customer", "priority", "status", "assignee", "created_at"]
+      }
+    }
+  ]
+}
