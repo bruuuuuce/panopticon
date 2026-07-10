@@ -84,8 +84,12 @@ panopticon:
       max-pool-size: 10
 ```
 
-Use a **read-only** database account. The SQL guard (below) is defense in depth,
-not a substitute for real permissions.
+**Use a genuinely read-only database account, and preferably point queries at
+dedicated reporting views rather than raw tables.** The SQL guard (below) is a
+basic safety net — it blocks obviously dangerous statements by keyword, but it
+is not a complete SQL security system, and string-based checks can in
+principle be worked around by SQL it doesn't anticipate. The guard is defense
+in depth on top of real database permissions, never a substitute for them.
 
 ### Adding a query
 
@@ -106,13 +110,12 @@ One JSON file per query under `config/queries/`:
 `timeoutSeconds` (default `10`), `maxRows` (default `1000`) and
 `cacheTtlSeconds` (default `10`) are all optional.
 
-Only `SELECT`/`WITH` statements are allowed, and only a single statement. The
-guard also rejects `insert`, `update`, `delete`, `merge`, `drop`, `alter`,
-`truncate`, `create`, `grant`, `revoke`, `execute`/`exec`, `call`, `begin`,
-`commit`, `rollback` appearing as SQL keywords anywhere in the statement (string
-literals and comments are excluded from the check). Column aliases are lower-cased
-by the engine before reaching the frontend, so panel `options` can always refer to
-them in lower case regardless of how the underlying database folds identifiers.
+Only `SELECT`/`WITH` statements pass the read-only guard — see
+[SQL read-only guard](#sql-read-only-guard) below for exactly what's rejected
+and why it's not a substitute for real database permissions. Column aliases
+are lower-cased by the engine before reaching the frontend, so panel `options`
+can always refer to them in lower case regardless of how the underlying
+database folds identifiers.
 
 Query results are cached **by query id** for `cacheTtlSeconds` (default `10`,
 `0` disables caching for that query). This is a backend concern, not a frontend
@@ -204,7 +207,7 @@ src/main/java/com/panopticon/
 ├── config/      Datasource + config-path properties, HikariCP + registry wiring
 ├── loader/      JSON config loading and cross-reference validation
 ├── registry/    In-memory lookups (dashboards, queries, datasources)
-├── query/       SQL execution + the read-only guard
+├── query/       QueryEngine (execute-by-id, timeout/maxRows, caching) + the read-only guard
 ├── runtime/     Per-panel refresh-health tracking
 └── api/         REST controllers + error handling
 
@@ -231,9 +234,48 @@ Monitor mode (`/monitor.html`) rotates through dashboards whose
 `rotation.enabled` is true, showing each for its own `rotation.durationSeconds`,
 with pause/prev/next controls (also bindable via space/←/→) and a progress bar.
 
+## Query engine
+
+`QueryEngine` (`com.panopticon.query`) is the single path any SQL execution goes
+through — there is no endpoint that accepts SQL from the frontend, only
+`GET /api/dashboards/{id}/panels/{panelId}/data`, which resolves the panel's
+`queryRef` to a query id and calls `QueryEngine.execute(queryId)`. For every
+execution it:
+
+1. Resolves the query id via the `QueryRegistry` (404 `UnknownQueryException` if not found).
+2. Runs the SQL guard (`SqlGuard.assertReadOnly`) — see below.
+3. Serves from `QueryResultCache` if a fresh entry exists, otherwise runs the
+   query with `JdbcTemplate`, enforcing `timeoutSeconds` (`Statement.setQueryTimeout`)
+   and `maxRows` (`Statement.setMaxRows`, backstopped by an application-level cap
+   in the row loop).
+4. Returns a `QueryResult` carrying `columns` (name + JDBC type), `rows`,
+   `generatedAt`, `executionTimeMs`, and `rowCount`.
+
+Every panel data request also updates that panel's `PanelRuntimeState`
+(status/last-refresh/last-error/duration) in `PanelRuntimeTracker`, exposed via
+`GET /api/runtime/panels` — so both an individual panel's health (frontend
+status dot) and the overall fleet of panels (this endpoint) are observable.
+
+### SQL read-only guard
+
+`SqlGuard` rejects any statement that isn't a single `SELECT`/`WITH`, and
+separately rejects the keywords `insert`, `update`, `delete`, `merge`, `drop`,
+`alter`, `truncate`, `grant`, `execute`, `call`, `begin`, `commit`, `rollback`
+(plus a few more: `create`, `revoke`, `exec`) appearing anywhere in the
+statement as SQL keywords — string literals and comments are stripped before
+the keyword scan so they don't cause false positives/negatives.
+
+**This is a basic safety layer, not a complete SQL security system.** It is a
+keyword blacklist plus a `SELECT`/`WITH`-only allowlist, checked against
+straightforwardly-formatted SQL — it is not a full parser and could in
+principle be defeated by SQL it doesn't anticipate. Real deployments must
+still connect through a genuinely **read-only database user**, and preferably
+point queries at **dedicated reporting views** rather than raw tables, so that
+even a guard bypass has nothing destructive or sensitive to reach. The guard
+exists to catch authoring mistakes early and add defense in depth — never as a
+substitute for real database permissions.
+
 ## Known limitations (by design, for this MVP)
 
 - No hot config reload — `/api/config/validate` is dry-run only, restart to apply changes.
 - No auth — this is meant to run inside a trusted network/VPN for an internal team.
-- The SQL guard is a keyword blacklist plus a `SELECT`/`WITH`-only allowlist; it
-  is defense in depth, not a substitute for read-only DB credentials.

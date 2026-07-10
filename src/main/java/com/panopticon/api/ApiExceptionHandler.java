@@ -3,6 +3,7 @@ package com.panopticon.api;
 import com.panopticon.api.dto.ApiError;
 import com.panopticon.query.QueryExecutionException;
 import com.panopticon.query.SqlGuardException;
+import com.panopticon.query.UnknownQueryException;
 import com.panopticon.registry.DatasourceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(NotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.of("not_found", e.getMessage()));
+    }
+
+    @ExceptionHandler(UnknownQueryException.class)
+    public ResponseEntity<ApiError> handleUnknownQuery(UnknownQueryException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.of("not_found", e.getMessage()));
     }
 

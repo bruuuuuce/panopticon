@@ -3,12 +3,12 @@ package com.panopticon.api;
 import com.panopticon.api.dto.DashboardSummary;
 import com.panopticon.model.DashboardDefinition;
 import com.panopticon.model.PanelDefinition;
-import com.panopticon.model.QueryDefinition;
 import com.panopticon.model.QueryResult;
+import com.panopticon.query.QueryEngine;
 import com.panopticon.query.QueryExecutionException;
-import com.panopticon.query.QueryExecutor;
+import com.panopticon.query.SqlGuardException;
+import com.panopticon.query.UnknownQueryException;
 import com.panopticon.registry.DashboardRegistry;
-import com.panopticon.registry.QueryRegistry;
 import com.panopticon.runtime.PanelRuntimeTracker;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,18 +22,12 @@ import java.util.List;
 public class DashboardController {
 
     private final DashboardRegistry dashboardRegistry;
-    private final QueryRegistry queryRegistry;
-    private final QueryExecutor queryExecutor;
+    private final QueryEngine queryEngine;
     private final PanelRuntimeTracker runtimeTracker;
 
-    public DashboardController(
-            DashboardRegistry dashboardRegistry,
-            QueryRegistry queryRegistry,
-            QueryExecutor queryExecutor,
-            PanelRuntimeTracker runtimeTracker) {
+    public DashboardController(DashboardRegistry dashboardRegistry, QueryEngine queryEngine, PanelRuntimeTracker runtimeTracker) {
         this.dashboardRegistry = dashboardRegistry;
-        this.queryRegistry = queryRegistry;
-        this.queryExecutor = queryExecutor;
+        this.queryEngine = queryEngine;
         this.runtimeTracker = runtimeTracker;
     }
 
@@ -55,15 +49,12 @@ public class DashboardController {
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException(
                         "Panel '%s' not found in dashboard '%s'".formatted(panelId, dashboardId)));
-        QueryDefinition query = queryRegistry.find(panel.queryRef())
-                .orElseThrow(() -> new NotFoundException(
-                        "Panel '%s' references unknown query '%s'".formatted(panelId, panel.queryRef())));
 
         try {
-            QueryResult result = queryExecutor.execute(query);
+            QueryResult result = queryEngine.execute(panel.queryRef());
             runtimeTracker.recordSuccess(dashboardId, panelId, result.executionTimeMs());
             return result;
-        } catch (QueryExecutionException | com.panopticon.query.SqlGuardException e) {
+        } catch (QueryExecutionException | SqlGuardException | UnknownQueryException e) {
             runtimeTracker.recordError(dashboardId, panelId, e.getMessage());
             throw e;
         }

@@ -4,9 +4,10 @@ import com.panopticon.model.ColumnMeta;
 import com.panopticon.model.QueryDefinition;
 import com.panopticon.model.QueryResult;
 import com.panopticon.registry.DatasourceRegistry;
+import com.panopticon.registry.QueryRegistry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;
@@ -16,27 +17,46 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
- * Executes a {@link QueryDefinition} against its configured datasource and
- * shapes the JDBC {@link ResultSet} into the generic tabular
- * {@link QueryResult} the frontend understands. Results are cached per query
- * id (see {@link QueryResultCache}) so concurrent panel refreshes across
- * viewers/dashboards don't each re-hit the datasource.
+ * Owns the full lifecycle of running a query by id: resolve it from the
+ * {@link QueryRegistry}, enforce the {@link SqlGuard} read-only check, serve
+ * or populate the {@link QueryResultCache}, execute against the query's
+ * datasource under its configured timeout/maxRows, and shape the JDBC
+ * {@link ResultSet} into the generic tabular {@link QueryResult} the
+ * frontend understands.
+ *
+ * <p>This is the only path SQL execution can be reached through. There is no
+ * endpoint that accepts ad hoc SQL from a client — every execution starts
+ * from a query id that must already resolve to a query defined in
+ * {@code config/queries}, so the frontend can never submit arbitrary SQL.
+ *
+ * <p><b>The read-only guard is a basic safety net, not a complete SQL
+ * security system.</b> It catches obviously dangerous statements by keyword,
+ * but string-based checks can in principle be worked around by SQL this
+ * guard doesn't anticipate. Real deployments must still point Panopticon at
+ * a genuinely read-only database user, and preferably at dedicated
+ * reporting views rather than raw tables, so a guard bypass has nothing
+ * destructive to reach.
  */
-@Component
-public class QueryExecutor {
+@Service
+public class QueryEngine {
 
+    private final QueryRegistry queryRegistry;
     private final DatasourceRegistry datasourceRegistry;
     private final QueryResultCache resultCache;
 
-    public QueryExecutor(DatasourceRegistry datasourceRegistry, QueryResultCache resultCache) {
+    public QueryEngine(QueryRegistry queryRegistry, DatasourceRegistry datasourceRegistry, QueryResultCache resultCache) {
+        this.queryRegistry = queryRegistry;
         this.datasourceRegistry = datasourceRegistry;
         this.resultCache = resultCache;
     }
 
-    public QueryResult execute(QueryDefinition query) {
+    public QueryResult execute(String queryId) {
+        QueryDefinition query = queryRegistry.find(queryId)
+                .orElseThrow(() -> new UnknownQueryException(queryId));
         SqlGuard.assertReadOnly(query.sql());
         return resultCache.getOrCompute(query.id(), query.cacheTtlSeconds(), () -> runQuery(query));
     }
@@ -72,7 +92,7 @@ public class QueryExecutor {
         // regardless of the underlying datasource's casing convention.
         List<ColumnMeta> columns = new ArrayList<>(columnCount);
         for (int i = 1; i <= columnCount; i++) {
-            columns.add(new ColumnMeta(metaData.getColumnLabel(i).toLowerCase(java.util.Locale.ROOT), metaData.getColumnTypeName(i)));
+            columns.add(new ColumnMeta(metaData.getColumnLabel(i).toLowerCase(Locale.ROOT), metaData.getColumnTypeName(i)));
         }
 
         List<Map<String, Object>> rows = new ArrayList<>();
