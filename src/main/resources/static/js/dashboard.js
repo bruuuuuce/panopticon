@@ -172,10 +172,22 @@ async function refresh(dashboardId, state) {
  * every panel, and schedules recurring refreshes per panel.refresh.
  * Returns a controller object with a `destroy()` to stop all timers
  * (call before mounting a different dashboard into the same element).
+ *
+ * `fillHeight: true` (used by monitor mode) makes panel rows share the
+ * container's full height evenly instead of the picker page's fixed
+ * `grid-auto-rows`, so a dashboard fills a wall monitor edge-to-edge with no
+ * dead space and no scrolling, whatever its row count.
  */
-function mount(gridEl, dashboard) {
+function mount(gridEl, dashboard, { fillHeight = false } = {}) {
     gridEl.innerHTML = '';
     gridEl.style.gridTemplateColumns = `repeat(${dashboard.gridColumns}, 1fr)`;
+    if (fillHeight) {
+        const rowCount = Math.max(1, ...dashboard.panels.map((p) => p.grid.row + p.grid.rowSpan - 1));
+        gridEl.style.gridAutoRows = 'unset';
+        gridEl.style.gridTemplateRows = `repeat(${rowCount}, 1fr)`;
+    } else {
+        gridEl.style.gridTemplateRows = '';
+    }
 
     const states = [];
     for (const panel of dashboard.panels) {

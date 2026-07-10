@@ -337,17 +337,45 @@ body.monitor {
     color: var(--series-1);
 }
 
+.monitor-dashboard-info {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+}
+
 .monitor-bar .dash-title {
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dash-position {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .monitor-bar .spacer {
     flex: 1;
 }
 
+.countdown {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-width: 6.5em;
+    text-align: right;
+}
+
 .monitor-controls {
     display: flex;
+    align-items: center;
     gap: 6px;
 }
 
@@ -369,6 +397,11 @@ body.monitor {
 .monitor-controls button.active {
     border-color: var(--series-1);
     color: var(--series-1);
+}
+
+.monitor-controls .nav-link {
+    display: inline-flex;
+    align-items: center;
 }
 
 .monitor-progress {
@@ -394,4 +427,27 @@ body.monitor {
 
 .monitor-body .panel-grid {
     height: 100%;
+}
+
+/* Wall-monitor viewing distance is further than a desk, so panel text runs
+   larger here than on the picker page — same content, sized to be read
+   across a room rather than from an arm's length away. */
+.monitor-body .panel-title {
+    font-size: 15px;
+}
+
+.monitor-body .kpi-value {
+    font-size: clamp(40px, 6vh, 72px);
+}
+
+.monitor-body .kpi-unit {
+    font-size: clamp(18px, 2.2vh, 26px);
+}
+
+.monitor-body .kpi-label {
+    font-size: 14px;
+}
+
+.monitor-body table.panel-table {
+    font-size: 14px;
 }

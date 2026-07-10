@@ -9,13 +9,18 @@
 <body class="monitor">
 <div class="monitor-bar">
     <div class="brand"><span class="eye">&#9673;</span> Panopticon</div>
-    <div class="dash-title" id="current-dashboard-title">Loading&hellip;</div>
+    <div class="monitor-dashboard-info">
+        <span class="dash-title" id="current-dashboard-title">Loading&hellip;</span>
+        <span class="dash-position" id="dashboard-position"></span>
+    </div>
     <div class="spacer"></div>
+    <div class="countdown" id="countdown"></div>
     <div class="monitor-controls">
-        <button id="btn-prev" title="Previous dashboard">&#8249; Prev</button>
-        <button id="btn-pause" title="Pause rotation">Pause</button>
-        <button id="btn-next" title="Next dashboard">Next &#8250;</button>
-        <a class="nav-link" href="/index.html" style="display:flex;align-items:center;">Exit</a>
+        <button id="btn-prev" title="Previous dashboard (&larr;)">&#8249; Prev</button>
+        <button id="btn-pause" title="Pause rotation (space)">Pause</button>
+        <button id="btn-next" title="Next dashboard (&rarr;)">Next &#8250;</button>
+        <button id="btn-fullscreen" title="Toggle fullscreen (f)">Fullscreen</button>
+        <a class="nav-link" href="/index.html">Exit</a>
     </div>
 </div>
 <div class="monitor-progress"><div class="monitor-progress-bar" id="progress-bar"></div></div>
