@@ -139,7 +139,7 @@ re-fetches that panel's data:
     {
       "id": "kpi-open",
       "title": "Open Tickets",
-      "type": "KPI",
+      "type": "stat",
       "queryRef": "kpi-open-tickets",
       "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
       "refresh": { "intervalSeconds": 30, "enabled": true },
@@ -152,13 +152,17 @@ re-fetches that panel's data:
 `options` is deliberately a loose map — it's the one place panel-type-specific
 rendering hints live, since each chart type only needs 2-3 fields:
 
-| Panel type | Relevant `options` keys |
-|---|---|
-| `KPI` | `valueField`, `format` (`number`\|`decimal`), `unit` |
-| `TABLE` | `columns` (array; omit to show every column the query returns) |
-| `BAR_CHART` | `xField`, `yField`, `seriesName` |
-| `LINE_CHART` | `xField`, `yField`, `seriesName` |
-| `DONUT_CHART` | `labelField`, `valueField` |
+| Panel type | Required `options` keys | Optional |
+|---|---|---|
+| `stat` | `valueField` | `format` (`number`\|`decimal`), `unit` |
+| `table` | — | `columns` (array; omit to show every column the query returns) |
+| `bar` | `xField`, `yField` | `seriesName` |
+| `line` | `xField`, `yField` | `seriesName` |
+| `donut` | `labelField`, `valueField` | — |
+
+`/api/config/validate` (and startup) reject a panel missing its type's required
+`options` keys, or a `grid` position that's out of bounds for the dashboard's
+`gridColumns`.
 
 Validate a config edit without restarting the app:
 

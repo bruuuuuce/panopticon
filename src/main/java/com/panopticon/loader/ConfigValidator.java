@@ -1,7 +1,9 @@
 package com.panopticon.loader;
 
 import com.panopticon.model.DashboardDefinition;
+import com.panopticon.model.GridPosition;
 import com.panopticon.model.PanelDefinition;
+import com.panopticon.model.PanelType;
 import com.panopticon.model.QueryDefinition;
 import com.panopticon.query.SqlGuard;
 import com.panopticon.query.SqlGuardException;
@@ -83,13 +85,58 @@ public final class ConfigValidator {
                 }
                 if (panel.grid() == null) {
                     errors.add(new ValidationError(panelSource, "Panel is missing 'grid' position"));
+                } else {
+                    validateGridPosition(panelSource, panel.grid(), dashboard.gridColumns(), errors);
                 }
                 if (panel.type() == null) {
                     errors.add(new ValidationError(panelSource, "Panel is missing 'type'"));
+                } else {
+                    validateChartMappings(panelSource, panel.type(), panel.options(), errors);
                 }
             }
         }
 
         return ValidationResult.failed(errors, dashboards.size(), queries.size());
+    }
+
+    private static void validateGridPosition(String panelSource, GridPosition grid, int gridColumns, List<ValidationError> errors) {
+        if (grid.row() < 1) {
+            errors.add(new ValidationError(panelSource, "'grid.row' must be >= 1"));
+        }
+        if (grid.col() < 1) {
+            errors.add(new ValidationError(panelSource, "'grid.col' must be >= 1"));
+        }
+        if (grid.rowSpan() < 1) {
+            errors.add(new ValidationError(panelSource, "'grid.rowSpan' must be >= 1"));
+        }
+        if (grid.colSpan() < 1) {
+            errors.add(new ValidationError(panelSource, "'grid.colSpan' must be >= 1"));
+        }
+        if (grid.col() >= 1 && grid.colSpan() >= 1 && grid.col() + grid.colSpan() - 1 > gridColumns) {
+            errors.add(new ValidationError(panelSource,
+                    "Panel spans column %d, past the dashboard's %d-column grid".formatted(
+                            grid.col() + grid.colSpan() - 1, gridColumns)));
+        }
+    }
+
+    /** Each chart-shaped panel type needs specific fields in `options` to know what to plot. */
+    private static void validateChartMappings(String panelSource, PanelType type, Map<String, Object> options, List<ValidationError> errors) {
+        switch (type) {
+            case STAT -> requireOptions(panelSource, type, options, errors, "valueField");
+            case BAR, LINE -> requireOptions(panelSource, type, options, errors, "xField", "yField");
+            case DONUT -> requireOptions(panelSource, type, options, errors, "labelField", "valueField");
+            case TABLE -> { /* columns is optional; omitting it means "show every column" */ }
+        }
+    }
+
+    private static void requireOptions(
+            String panelSource, PanelType type, Map<String, Object> options, List<ValidationError> errors, String... keys) {
+        for (String key : keys) {
+            Object value = options.get(key);
+            if (value == null || (value instanceof String s && s.isBlank())) {
+                errors.add(new ValidationError(panelSource,
+                        "Panel type '%s' requires options.%s".formatted(type.toJson(), key)));
+            }
+        }
     }
 }

@@ -9,11 +9,11 @@ import java.util.Locale;
  * Supported panel widget types for the MVP.
  */
 public enum PanelType {
-    KPI,
+    STAT,
     TABLE,
-    BAR_CHART,
-    LINE_CHART,
-    DONUT_CHART;
+    BAR,
+    LINE,
+    DONUT;
 
     @JsonCreator
     public static PanelType fromJson(String value) {
@@ -22,6 +22,6 @@ public enum PanelType {
 
     @JsonValue
     public String toJson() {
-        return name();
+        return name().toLowerCase(Locale.ROOT);
     }
 }

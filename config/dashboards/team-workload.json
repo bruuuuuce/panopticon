@@ -8,7 +8,7 @@
     {
       "id": "kpi-critical-open",
       "title": "Critical Tickets Open",
-      "type": "KPI",
+      "type": "stat",
       "queryRef": "kpi-critical-open",
       "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
       "refresh": { "intervalSeconds": 30, "enabled": true },
@@ -17,7 +17,7 @@
     {
       "id": "donut-priority",
       "title": "Open Tickets by Priority",
-      "type": "DONUT_CHART",
+      "type": "donut",
       "queryRef": "donut-tickets-by-priority",
       "grid": { "row": 1, "col": 4, "rowSpan": 2, "colSpan": 4 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
@@ -26,7 +26,7 @@
     {
       "id": "bar-assignee",
       "title": "Open Workload by Assignee",
-      "type": "BAR_CHART",
+      "type": "bar",
       "queryRef": "bar-tickets-by-assignee",
       "grid": { "row": 1, "col": 8, "rowSpan": 2, "colSpan": 5 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
@@ -35,7 +35,7 @@
     {
       "id": "table-recent",
       "title": "Recent Tickets",
-      "type": "TABLE",
+      "type": "table",
       "queryRef": "table-recent-tickets",
       "grid": { "row": 3, "col": 1, "rowSpan": 2, "colSpan": 12 },
       "refresh": { "intervalSeconds": 30, "enabled": true },

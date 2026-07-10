@@ -60,7 +60,7 @@ const Dashboard = (() => {
         header.append(dot, title, time);
 
         const body = document.createElement('div');
-        body.className = 'panel-body' + (panel.type === 'TABLE' ? ' no-pad' : '');
+        body.className = 'panel-body' + (panel.type === 'table' ? ' no-pad' : '');
         body.innerHTML = '<div class="panel-loading">Loading…</div>';
 
         el.append(header, body);
@@ -120,11 +120,11 @@ const Dashboard = (() => {
 
     function render(state, result) {
         switch (state.panel.type) {
-            case 'KPI': renderKpi(state, result); break;
-            case 'TABLE': renderTable(state, result); break;
-            case 'BAR_CHART': renderChart(state, result, 'bar'); break;
-            case 'LINE_CHART': renderChart(state, result, 'line'); break;
-            case 'DONUT_CHART': renderChart(state, result, 'donut'); break;
+            case 'stat': renderKpi(state, result); break;
+            case 'table': renderTable(state, result); break;
+            case 'bar': renderChart(state, result, 'bar'); break;
+            case 'line': renderChart(state, result, 'line'); break;
+            case 'donut': renderChart(state, result, 'donut'); break;
             default: state.body.innerHTML = `<div class="panel-error">Unsupported panel type: ${escapeHtml(state.panel.type)}</div>`;
         }
     }
