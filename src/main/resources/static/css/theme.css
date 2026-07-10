@@ -186,6 +186,7 @@ a {
 }
 
 .panel-header .refresh-time {
+    flex: none;
     font-size: 11px;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
