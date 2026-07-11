@@ -52,10 +52,10 @@ public class DashboardController {
 
         try {
             QueryResult result = queryEngine.execute(panel.queryRef());
-            runtimeTracker.recordSuccess(dashboardId, panelId, result.executionTimeMs());
+            runtimeTracker.recordSuccess(dashboardId, panelId, panel.queryRef(), result.executionTimeMs(), result.rowCount());
             return result;
         } catch (QueryExecutionException | SqlGuardException | UnknownQueryException e) {
-            runtimeTracker.recordError(dashboardId, panelId, e.getMessage());
+            runtimeTracker.recordFailure(dashboardId, panelId, panel.queryRef(), e.getMessage());
             throw e;
         }
     }

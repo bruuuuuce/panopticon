@@ -126,6 +126,13 @@ when the query actually ran, so the frontend always shows true data age even on
 a cache hit. Set a lower `cacheTtlSeconds` (or `0`) for a query backing
 something that must never lag, e.g. an alert-driving KPI.
 
+**A failing query is cached too**, for the same TTL as a success. Without
+this, a datasource outage would defeat the entire point of caching: every
+viewer's refresh would re-hit the already-struggling datasource instead of
+being collapsed the way a healthy query is. Every request during that window
+gets the same error immediately (no repeated timeouts piling up), and the
+next attempt after the TTL expires gets to try again for real.
+
 ### Adding a dashboard
 
 One JSON file per dashboard under `config/dashboards/`. `grid`/`gridColumns` follow
@@ -184,7 +191,7 @@ changes). It exists for authoring feedback, not live reload.
 | GET | `/api/dashboards` | List dashboards (summary: id/title/description/panel count) |
 | GET | `/api/dashboards/{id}` | Full dashboard definition (panels, grid, refresh policy) |
 | GET | `/api/dashboards/{id}/panels/{panelId}/data` | Execute the panel's query, return tabular JSON |
-| GET | `/api/runtime/panels` | Last refresh outcome (status/time/duration) per panel |
+| GET | `/api/runtime/panels` | Last success/failure, duration, row count per panel |
 | POST | `/api/config/validate` | Dry-run validation of `config/` as it sits on disk |
 
 Panel data responses are shaped as:
@@ -198,6 +205,30 @@ Panel data responses are shaped as:
   "rowCount": 4
 }
 ```
+
+`/api/runtime/panels` returns one entry per panel that has been requested at
+least once since the process started:
+
+```json
+[
+  {
+    "dashboardId": "support-ops",
+    "panelId": "kpi-open",
+    "queryRef": "kpi-open-tickets",
+    "lastSuccess": "2026-07-11T14:32:23.587Z",
+    "lastFailure": null,
+    "lastDurationMs": 7,
+    "lastError": null,
+    "rowCount": 1
+  }
+]
+```
+
+`lastSuccess`/`lastFailure` are independent and both "sticky": a success
+doesn't clear a prior failure's `lastError`, and a failure doesn't clear
+`lastDurationMs`/`rowCount` from the last successful run — so a panel that's
+currently erroring still shows what it looked like when it last worked,
+alongside what's wrong now.
 
 ## Project structure
 
@@ -251,10 +282,14 @@ execution it:
 4. Returns a `QueryResult` carrying `columns` (name + JDBC type), `rows`,
    `generatedAt`, `executionTimeMs`, and `rowCount`.
 
-Every panel data request also updates that panel's `PanelRuntimeState`
-(status/last-refresh/last-error/duration) in `PanelRuntimeTracker`, exposed via
-`GET /api/runtime/panels` — so both an individual panel's health (frontend
-status dot) and the overall fleet of panels (this endpoint) are observable.
+Every panel data request also updates that panel's `PanelRuntimeState` in
+`PanelRuntimeTracker` (`lastSuccess`/`lastFailure`/`lastDurationMs`/
+`lastError`/`rowCount` — see the response shape above), exposed via
+`GET /api/runtime/panels`. So both an individual panel's health (the
+frontend's own per-panel status dot, driven by its own fetch) and the
+overall fleet of panels (this endpoint, useful for ops/alerting) are
+observable. Updates go through an atomic compute rather than read-then-write,
+since multiple viewers can refresh the same panel at effectively the same time.
 
 ### SQL read-only guard
 

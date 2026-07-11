@@ -5,6 +5,8 @@ import com.panopticon.model.QueryDefinition;
 import com.panopticon.model.QueryResult;
 import com.panopticon.registry.DatasourceRegistry;
 import com.panopticon.registry.QueryRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,8 @@ import java.util.Map;
 @Service
 public class QueryEngine {
 
+    private static final Logger log = LoggerFactory.getLogger(QueryEngine.class);
+
     private final QueryRegistry queryRegistry;
     private final DatasourceRegistry datasourceRegistry;
     private final QueryResultCache resultCache;
@@ -62,6 +66,7 @@ public class QueryEngine {
     }
 
     private QueryResult runQuery(QueryDefinition query) {
+        log.debug("Executing query '{}' against datasource '{}' (cache miss/expired)", query.id(), query.datasource());
         DataSource dataSource = datasourceRegistry.dataSourceFor(query.datasource());
         // A fresh JdbcTemplate per execution: queryTimeout/maxRows are instance-level
         // settings on JdbcTemplate, and this datasource may serve concurrent panel
