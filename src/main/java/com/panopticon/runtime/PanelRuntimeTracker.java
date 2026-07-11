@@ -25,9 +25,9 @@ public class PanelRuntimeTracker {
 
     private final ConcurrentHashMap<String, PanelRuntimeState> states = new ConcurrentHashMap<>();
 
-    public void recordSuccess(String dashboardId, String panelId, String queryRef, long durationMs, int rowCount) {
+    public void recordSuccess(String dashboardId, String panelId, String dataRef, long durationMs, int rowCount) {
         states.compute(key(dashboardId, panelId), (k, previous) -> new PanelRuntimeState(
-                dashboardId, panelId, queryRef,
+                dashboardId, panelId, dataRef,
                 Instant.now(),
                 previous == null ? null : previous.lastFailure(),
                 durationMs,
@@ -35,9 +35,9 @@ public class PanelRuntimeTracker {
                 rowCount));
     }
 
-    public void recordFailure(String dashboardId, String panelId, String queryRef, String errorMessage) {
+    public void recordFailure(String dashboardId, String panelId, String dataRef, String errorMessage) {
         states.compute(key(dashboardId, panelId), (k, previous) -> new PanelRuntimeState(
-                dashboardId, panelId, queryRef,
+                dashboardId, panelId, dataRef,
                 previous == null ? null : previous.lastSuccess(),
                 Instant.now(),
                 previous == null ? 0 : previous.lastDurationMs(),

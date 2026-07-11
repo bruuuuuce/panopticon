@@ -1,0 +1,67 @@
+{
+  "id": "provider-showcase",
+  "title": "Provider Showcase",
+  "description": "One dashboard, two non-JDBC-only provider types: SQLite (jdbc) and a mocked Jira (jira) — proof the frontend/dashboard model doesn't care where a panel's data comes from.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": true },
+  "panels": [
+    {
+      "id": "kpi-jira-open",
+      "title": "Open Jira Issues",
+      "type": "stat",
+      "dataRef": "jira-kpi-open-issues",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": { "valueField": "total", "format": "number" }
+    },
+    {
+      "id": "kpi-sqlite-online",
+      "title": "Online Edge Nodes",
+      "type": "stat",
+      "dataRef": "local-kpi-online-nodes",
+      "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": { "valueField": "online_nodes", "format": "number" }
+    },
+    {
+      "id": "donut-jira-status",
+      "title": "Jira Issues by Status",
+      "type": "donut",
+      "dataRef": "jira-open-issues-by-status",
+      "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "labelField": "status", "valueField": "total" }
+    },
+    {
+      "id": "bar-sqlite-status",
+      "title": "Edge Nodes by Status",
+      "type": "bar",
+      "dataRef": "local-nodes-by-status",
+      "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "xField": "status", "yField": "node_count", "seriesName": "Nodes" }
+    },
+    {
+      "id": "table-sqlite-nodes",
+      "title": "Edge Node Status (SQLite)",
+      "type": "table",
+      "dataRef": "local-edge-nodes",
+      "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": {
+        "columns": ["node_name", "region", "status", "last_heartbeat"]
+      }
+    },
+    {
+      "id": "table-jira-recent",
+      "title": "Recent Open Issues (Jira, mocked)",
+      "type": "table",
+      "dataRef": "jira-recent-issues",
+      "grid": { "row": 3, "col": 1, "rowSpan": 2, "colSpan": 12 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": {
+        "columns": ["key", "summary", "status", "priority", "assignee", "created"]
+      }
+    }
+  ]
+}

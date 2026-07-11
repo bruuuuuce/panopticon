@@ -1,45 +1,51 @@
 package com.panopticon.registry;
 
-import javax.sql.DataSource;
+import com.panopticon.model.DataSourceDefinition;
+
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * In-memory lookup of configured datasources by name, keyed the same way as
  * {@code panopticon.datasources.*} in application.yml and referenced by
- * {@link com.panopticon.model.QueryDefinition#datasource()}.
+ * {@link com.panopticon.model.DataDefinition#datasource()}.
  *
- * <p>Exposes the raw {@link DataSource} rather than a shared JdbcTemplate:
- * per-query settings (timeout, max rows) must be applied per-execution, and
- * a single mutable JdbcTemplate instance shared across concurrent panel
- * refreshes would race on those settings.
+ * <p>Holds only the {@link DataSourceDefinition} config, not any live
+ * connection/client resource — a datasource might be a JDBC pool, a Jira
+ * REST client, or something else entirely, and only the matching
+ * {@link com.panopticon.data.DataProvider} knows how to turn config into a
+ * live resource. Each provider builds and caches whatever it needs
+ * (e.g. {@code JdbcDataProvider} builds one {@code HikariDataSource} per
+ * jdbc-provider entry) by filtering this registry at startup.
  */
-public class DatasourceRegistry {
+public class DataSourceRegistry {
 
-    private final Map<String, DataSource> dataSources;
+    private final Map<String, DataSourceDefinition> datasources;
 
-    public DatasourceRegistry(Map<String, DataSource> dataSources) {
-        this.dataSources = Map.copyOf(dataSources);
+    public DataSourceRegistry(Map<String, DataSourceDefinition> datasources) {
+        this.datasources = Map.copyOf(datasources);
     }
 
-    public DataSource dataSourceFor(String name) {
-        DataSource dataSource = dataSources.get(name);
-        if (dataSource == null) {
-            throw new NoSuchDatasourceException(name, dataSources.keySet());
-        }
-        return dataSource;
+    public Optional<DataSourceDefinition> find(String name) {
+        return Optional.ofNullable(datasources.get(name));
     }
 
     public boolean contains(String name) {
-        return dataSources.containsKey(name);
+        return datasources.containsKey(name);
     }
 
     public Set<String> names() {
-        return dataSources.keySet();
+        return datasources.keySet();
     }
 
-    public static class NoSuchDatasourceException extends RuntimeException {
-        public NoSuchDatasourceException(String name, Set<String> known) {
+    public Collection<DataSourceDefinition> all() {
+        return datasources.values();
+    }
+
+    public static class NoSuchDataSourceException extends RuntimeException {
+        public NoSuchDataSourceException(String name, Set<String> known) {
             super("Unknown datasource '%s'. Configured datasources: %s".formatted(name, known));
         }
     }

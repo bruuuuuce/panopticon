@@ -1,0 +1,9 @@
+{
+  "id": "local-edge-nodes",
+  "name": "Edge node status",
+  "provider": "jdbc",
+  "datasource": "local-sqlite",
+  "sql": "SELECT node_name, region, status, last_heartbeat FROM edge_nodes ORDER BY region, node_name",
+  "timeoutMs": 5000,
+  "maxRows": 50
+}

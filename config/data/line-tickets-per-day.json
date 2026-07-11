@@ -1,0 +1,9 @@
+{
+  "id": "line-tickets-per-day",
+  "name": "Tickets created per day (last 14 days)",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT CAST(created_at AS DATE) AS day_bucket, COUNT(*) AS ticket_count FROM tickets WHERE created_at >= DATEADD('DAY', -14, CURRENT_TIMESTAMP) GROUP BY CAST(created_at AS DATE) ORDER BY day_bucket",
+  "timeoutMs": 5000,
+  "maxRows": 30
+}

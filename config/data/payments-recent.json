@@ -1,0 +1,9 @@
+{
+  "id": "payments-recent",
+  "name": "Most recent payments",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT id, customer, amount, currency, method, status, created_at FROM payments ORDER BY created_at DESC LIMIT 20",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

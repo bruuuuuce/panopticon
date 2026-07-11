@@ -1,8 +1,0 @@
-{
-  "id": "payments-by-method",
-  "name": "Payments by method",
-  "datasource": "mock",
-  "sql": "SELECT method, COUNT(*) AS payment_count FROM payments GROUP BY method ORDER BY payment_count DESC",
-  "timeoutSeconds": 5,
-  "maxRows": 20
-}

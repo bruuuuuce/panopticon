@@ -1,0 +1,9 @@
+{
+  "id": "kpi-avg-resolution",
+  "name": "Average resolution time (hours)",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT ROUND(AVG(DATEDIFF('HOUR', created_at, resolved_at)), 1) AS avg_resolution_hours FROM tickets WHERE resolved_at IS NOT NULL",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

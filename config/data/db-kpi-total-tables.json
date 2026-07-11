@@ -1,0 +1,9 @@
+{
+  "id": "db-kpi-total-tables",
+  "name": "Total tables in schema",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT COUNT(*) AS total_tables FROM information_schema.tables WHERE table_schema = 'PUBLIC'",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

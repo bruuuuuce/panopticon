@@ -1,0 +1,9 @@
+{
+  "id": "donut-tickets-by-status",
+  "name": "Tickets by status",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT status, COUNT(*) AS ticket_count FROM tickets GROUP BY status ORDER BY status",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

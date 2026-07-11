@@ -41,6 +41,15 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- SQLite jdbc provider datasource (demonstrates the jdbc provider against
+         a second dialect, not just H2) -->
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>3.42.0.0</version>
+      <scope>runtime</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
@@ -59,6 +68,30 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!-- The codebase uses Java 21 records/pattern-matching; building with an
+           older JDK fails with cryptic "class, interface, or enum expected"
+           syntax errors instead of an explanation. Fail fast with a clear message. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.4.1</version>
+        <executions>
+          <execution>
+            <id>enforce-java-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[21,)</version>
+                  <message>Panopticon requires Java 21+. If you use sdkman: sdk use java 21.0.11-amzn (or any installed 21.x).</message>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -1,0 +1,9 @@
+{
+  "id": "local-nodes-by-status",
+  "name": "Edge nodes by status",
+  "provider": "jdbc",
+  "datasource": "local-sqlite",
+  "sql": "SELECT status, COUNT(*) AS node_count FROM edge_nodes GROUP BY status ORDER BY status",
+  "timeoutMs": 5000,
+  "maxRows": 10
+}

@@ -7,14 +7,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * {@code panopticon.config.*} in application.yml.
  */
 @ConfigurationProperties(prefix = "panopticon.config")
-public record ConfigPathsProperties(String dashboardsPath, String queriesPath) {
+public record ConfigPathsProperties(String dashboardsPath, String dataPath) {
 
     public ConfigPathsProperties {
         if (dashboardsPath == null || dashboardsPath.isBlank()) {
             dashboardsPath = "config/dashboards";
         }
-        if (queriesPath == null || queriesPath.isBlank()) {
-            queriesPath = "config/queries";
+        if (dataPath == null || dataPath.isBlank()) {
+            dataPath = "config/data";
         }
     }
 }

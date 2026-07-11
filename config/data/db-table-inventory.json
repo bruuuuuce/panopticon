@@ -1,0 +1,9 @@
+{
+  "id": "db-table-inventory",
+  "name": "Table inventory with row counts",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT table_name, row_count_estimate AS row_count FROM information_schema.tables WHERE table_schema = 'PUBLIC' ORDER BY table_name",
+  "timeoutMs": 5000,
+  "maxRows": 50
+}

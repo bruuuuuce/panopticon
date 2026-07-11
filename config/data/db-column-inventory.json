@@ -1,0 +1,9 @@
+{
+  "id": "db-column-inventory",
+  "name": "Column inventory",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'PUBLIC' ORDER BY table_name, ordinal_position",
+  "timeoutMs": 5000,
+  "maxRows": 200
+}

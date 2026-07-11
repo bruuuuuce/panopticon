@@ -81,7 +81,7 @@ function buildPanelCard(panel) {
 
     el.append(header, body);
 
-    return { panel, el, dot, time, body, chart: null, timerId: null, lastRefreshAt: null, refreshing: false };
+    return { panel, el, dot, time, body, chart: null, timerId: null, lastRefreshAt: null, lastResult: null, refreshing: false };
 }
 
 function renderKpi(state, result) {
@@ -157,6 +157,7 @@ async function refresh(dashboardId, state) {
     try {
         const result = await Api.getPanelData(dashboardId, state.panel.id);
         state.lastRefreshAt = new Date();
+        state.lastResult = result;
         state.dot.className = 'status-dot status-ok';
         render(state, result);
     } catch (err) {
@@ -210,10 +211,25 @@ function mount(gridEl, dashboard, { fillHeight = false } = {}) {
     const resizeHandler = () => states.forEach((s) => s.chart && s.chart.resize());
     window.addEventListener('resize', resizeHandler);
 
+    // Chart colors are baked into canvas draw calls at setOption() time, not
+    // live CSS custom properties like the rest of the UI — a day/night theme
+    // flip (see theme.js) needs charts explicitly re-rendered with the new
+    // palette rather than just re-cascading, or they'd look wrong until
+    // their next scheduled data refresh (up to panel.refresh.intervalSeconds later).
+    const themeChangeHandler = () => {
+        for (const state of states) {
+            if (state.chart && state.lastResult) {
+                render(state, state.lastResult);
+            }
+        }
+    };
+    window.addEventListener('panopticon:theme-changed', themeChangeHandler);
+
     return {
         destroy() {
             clearInterval(clockTimerId);
             window.removeEventListener('resize', resizeHandler);
+            window.removeEventListener('panopticon:theme-changed', themeChangeHandler);
             for (const state of states) {
                 if (state.timerId) clearInterval(state.timerId);
                 if (state.chart) state.chart.dispose();

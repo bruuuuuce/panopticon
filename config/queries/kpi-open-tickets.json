@@ -1,8 +1,0 @@
-{
-  "id": "kpi-open-tickets",
-  "name": "Open ticket count",
-  "datasource": "mock",
-  "sql": "SELECT COUNT(*) AS open_tickets FROM tickets WHERE status <> 'CLOSED'",
-  "timeoutSeconds": 5,
-  "maxRows": 1
-}

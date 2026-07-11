@@ -14,7 +14,7 @@ import java.time.Instant;
 public record PanelRuntimeState(
         String dashboardId,
         String panelId,
-        String queryRef,
+        String dataRef,
         Instant lastSuccess,
         Instant lastFailure,
         long lastDurationMs,

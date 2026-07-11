@@ -1,8 +1,0 @@
-{
-  "id": "donut-tickets-by-status",
-  "name": "Tickets by status",
-  "datasource": "mock",
-  "sql": "SELECT status, COUNT(*) AS ticket_count FROM tickets GROUP BY status ORDER BY status",
-  "timeoutSeconds": 5,
-  "maxRows": 20
-}

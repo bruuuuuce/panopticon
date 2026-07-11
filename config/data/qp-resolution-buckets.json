@@ -1,0 +1,9 @@
+{
+  "id": "qp-resolution-buckets",
+  "name": "Resolution time distribution",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT CASE WHEN DATEDIFF('HOUR', created_at, resolved_at) < 4 THEN '< 4h' WHEN DATEDIFF('HOUR', created_at, resolved_at) < 24 THEN '4-24h' WHEN DATEDIFF('HOUR', created_at, resolved_at) < 72 THEN '1-3d' ELSE '> 3d' END AS bucket, COUNT(*) AS ticket_count FROM tickets WHERE resolved_at IS NOT NULL GROUP BY bucket",
+  "timeoutMs": 5000,
+  "maxRows": 10
+}

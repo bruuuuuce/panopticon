@@ -1,8 +1,0 @@
-{
-  "id": "qp-kpi-sla-breaches",
-  "name": "Tickets resolved outside 24h SLA",
-  "datasource": "mock",
-  "sql": "SELECT COUNT(*) AS sla_breaches FROM tickets WHERE resolved_at IS NOT NULL AND DATEDIFF('HOUR', created_at, resolved_at) > 24",
-  "timeoutSeconds": 5,
-  "maxRows": 1
-}

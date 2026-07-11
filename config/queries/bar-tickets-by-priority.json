@@ -1,8 +1,0 @@
-{
-  "id": "bar-tickets-by-priority",
-  "name": "Tickets by priority",
-  "datasource": "mock",
-  "sql": "SELECT priority, COUNT(*) AS ticket_count FROM tickets GROUP BY priority ORDER BY priority",
-  "timeoutSeconds": 5,
-  "maxRows": 20
-}

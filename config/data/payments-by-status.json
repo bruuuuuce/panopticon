@@ -1,0 +1,9 @@
+{
+  "id": "payments-by-status",
+  "name": "Payments by status",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT status, COUNT(*) AS payment_count FROM payments GROUP BY status ORDER BY status",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

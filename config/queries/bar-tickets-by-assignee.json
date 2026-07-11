@@ -1,8 +1,0 @@
-{
-  "id": "bar-tickets-by-assignee",
-  "name": "Open workload by assignee",
-  "datasource": "mock",
-  "sql": "SELECT assignee, COUNT(*) AS ticket_count FROM tickets WHERE status <> 'CLOSED' GROUP BY assignee ORDER BY ticket_count DESC",
-  "timeoutSeconds": 5,
-  "maxRows": 20
-}

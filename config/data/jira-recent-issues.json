@@ -1,0 +1,11 @@
+{
+  "id": "jira-recent-issues",
+  "name": "Recent open issues",
+  "provider": "jira",
+  "datasource": "demo-jira",
+  "operation": "issue-search",
+  "jql": "project = DEMO AND statusCategory != Done",
+  "fields": ["key", "summary", "status", "priority", "assignee", "created"],
+  "timeoutMs": 5000,
+  "maxRows": 15
+}

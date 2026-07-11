@@ -1,0 +1,10 @@
+{
+  "id": "jira-kpi-open-issues",
+  "name": "Open issue count",
+  "provider": "jira",
+  "datasource": "demo-jira",
+  "operation": "issue-count",
+  "jql": "project = DEMO AND statusCategory != Done",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

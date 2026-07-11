@@ -1,28 +1,25 @@
 package com.panopticon.config;
 
-import com.panopticon.registry.DatasourceRegistry;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import com.panopticon.model.DataSourceDefinition;
+import com.panopticon.registry.DataSourceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
-import javax.sql.DataSource;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Builds one HikariCP-pooled {@link DataSource} per entry under
- * {@code panopticon.datasources.*} and exposes them via a
- * {@link DatasourceRegistry}. Entries that declare {@code initSchema}/
- * {@code initData} (used by the bundled H2 mock datasource) are populated
- * once at startup so the app runs standalone without an external database.
+ * Converts {@code panopticon.datasources.*} YAML into immutable
+ * {@link DataSourceDefinition} config records, exposed via a
+ * {@link DataSourceRegistry}. This is config only — no live connection or
+ * client is built here. Each {@link com.panopticon.data.DataProvider}
+ * (e.g. {@code JdbcDataProvider}) builds and owns whatever live resource it
+ * needs by filtering this registry for its own {@code provider} value at
+ * startup, so a jdbc pool and a jira client never have to fit the same
+ * "live resource" shape.
  */
 @Configuration
 public class DatasourceConfig {
@@ -36,54 +33,35 @@ public class DatasourceConfig {
     }
 
     @Bean
-    public DatasourceRegistry datasourceRegistry(
-            Map<String, DatasourceDefinitionProperties> datasourceDefinitions,
-            ResourceLoader resourceLoader) {
-
+    public DataSourceRegistry dataSourceRegistry(Map<String, DatasourceDefinitionProperties> datasourceDefinitions) {
         if (datasourceDefinitions.isEmpty()) {
             log.warn("No datasources configured under panopticon.datasources.*");
         }
 
-        Map<String, DataSource> dataSources = new LinkedHashMap<>();
+        Map<String, DataSourceDefinition> definitions = new LinkedHashMap<>();
         for (Map.Entry<String, DatasourceDefinitionProperties> entry : datasourceDefinitions.entrySet()) {
-            String name = entry.getKey();
-            DataSource dataSource = buildDataSource(name, entry.getValue());
-            initializeIfRequested(name, dataSource, entry.getValue(), resourceLoader);
-            dataSources.put(name, dataSource);
-            log.info("Registered datasource '{}'", name);
+            definitions.put(entry.getKey(), toDefinition(entry.getKey(), entry.getValue()));
         }
-        return new DatasourceRegistry(dataSources);
+        return new DataSourceRegistry(definitions);
     }
 
-    private DataSource buildDataSource(String name, DatasourceDefinitionProperties def) {
-        HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setPoolName("panopticon-" + name);
-        hikariConfig.setDriverClassName(def.getDriverClassName());
-        hikariConfig.setJdbcUrl(def.getUrl());
-        hikariConfig.setUsername(def.getUsername());
-        hikariConfig.setPassword(def.getPassword());
-        hikariConfig.setMaximumPoolSize(def.getMaxPoolSize());
-        return new HikariDataSource(hikariConfig);
-    }
-
-    private void initializeIfRequested(
-            String name, DataSource dataSource, DatasourceDefinitionProperties def, ResourceLoader resourceLoader) {
-
-        if (def.getInitSchema() == null && def.getInitData() == null) {
-            return;
-        }
-        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-        if (def.getInitSchema() != null) {
-            populator.addScript(resolve(resourceLoader, def.getInitSchema()));
-        }
-        if (def.getInitData() != null) {
-            populator.addScript(resolve(resourceLoader, def.getInitData()));
-        }
-        log.info("Initializing demo schema/data for datasource '{}'", name);
-        DatabasePopulatorUtils.execute(populator, dataSource);
-    }
-
-    private Resource resolve(ResourceLoader resourceLoader, String location) {
-        return resourceLoader.getResource(location);
+    private DataSourceDefinition toDefinition(String name, DatasourceDefinitionProperties props) {
+        DatasourceDefinitionProperties.JiraAuthProperties auth = props.getAuth();
+        return new DataSourceDefinition(
+                name,
+                props.getProvider(),
+                props.getJdbcUrl(),
+                props.getUsername(),
+                props.getPassword(),
+                props.getDriverClassName(),
+                props.getDialect(),
+                props.isReadOnly(),
+                props.getMaxPoolSize(),
+                props.getInitSchema(),
+                props.getInitData(),
+                props.getBaseUrl(),
+                auth == null ? null : auth.getType(),
+                auth == null ? null : auth.getToken()
+        );
     }
 }

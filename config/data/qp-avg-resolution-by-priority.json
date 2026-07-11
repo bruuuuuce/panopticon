@@ -1,0 +1,9 @@
+{
+  "id": "qp-avg-resolution-by-priority",
+  "name": "Average resolution time by priority",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT priority, ROUND(AVG(DATEDIFF('HOUR', created_at, resolved_at)), 1) AS avg_resolution_hours FROM tickets WHERE resolved_at IS NOT NULL GROUP BY priority ORDER BY priority",
+  "timeoutMs": 5000,
+  "maxRows": 10
+}

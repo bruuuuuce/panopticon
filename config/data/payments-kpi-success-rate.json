@@ -1,0 +1,9 @@
+{
+  "id": "payments-kpi-success-rate",
+  "name": "Payment success rate",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT ROUND(100.0 * SUM(CASE WHEN status = 'SUCCEEDED' THEN 1 ELSE 0 END) / COUNT(*), 1) AS success_rate FROM payments",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

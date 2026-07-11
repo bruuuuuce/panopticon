@@ -13,16 +13,60 @@ spring:
 panopticon:
   config:
     dashboards-path: config/dashboards
-    queries-path: config/queries
+    data-path: config/data
   datasources:
-    mock:
+    # H2, in-memory: the default demo/mock datasource. readOnly is false here
+    # (not because queries against it are writable — the SQL guard still
+    # blocks that — but because this datasource's own schema/seed data is
+    # loaded through the same connection pool at startup, which needs write
+    # access to do that).
+    demo-h2:
+      provider: jdbc
       driver-class-name: org.h2.Driver
-      url: "jdbc:h2:mem:panopticon;DB_CLOSE_DELAY=-1"
+      jdbc-url: "jdbc:h2:mem:panopticon;DB_CLOSE_DELAY=-1"
       username: sa
       password: ""
+      dialect: h2
+      read-only: false
       max-pool-size: 5
       init-schema: "classpath:db/mock/schema.sql"
       init-data: "classpath:db/mock/data.sql"
+
+    # SQLite, in-memory with shared cache (so every pooled connection sees the
+    # same data — a plain ":memory:" URL gives each connection its own private
+    # database). Demonstrates the jdbc provider against a second dialect.
+    # maxPoolSize is 1: SQLite handles concurrent writers poorly, and this
+    # datasource is small/read-mostly enough that pooling buys nothing here.
+    local-sqlite:
+      provider: jdbc
+      driver-class-name: org.sqlite.JDBC
+      jdbc-url: "jdbc:sqlite:file::memory:?cache=shared"
+      dialect: sqlite
+      read-only: false
+      max-pool-size: 1
+      init-schema: "classpath:db/sqlite/schema.sql"
+      init-data: "classpath:db/sqlite/data.sql"
+
+    # Jira: no real credentials configured, so JiraDataProvider serves this
+    # from an in-memory mock client instead of calling baseUrl. See
+    # com.panopticon.data.jira.MockJiraClient.
+    demo-jira:
+      provider: jira
+      base-url: "https://jira.example.com"
+      auth:
+        type: bearer
+        token: "${JIRA_TOKEN:demo-token}"
+
+    # Example of a real, external, read-only datasource — commented out since
+    # there's nothing at this address. See README "Adding a datasource".
+    # phoenix-oracle:
+    #   provider: jdbc
+    #   driver-class-name: oracle.jdbc.OracleDriver
+    #   jdbc-url: "jdbc:oracle:thin:@//host:1521/service"
+    #   username: "${PHOENIX_USER}"
+    #   password: "${PHOENIX_PASSWORD}"
+    #   dialect: oracle
+    #   read-only: true
 
 logging:
   level:

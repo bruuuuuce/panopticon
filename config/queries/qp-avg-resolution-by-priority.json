@@ -1,8 +1,0 @@
-{
-  "id": "qp-avg-resolution-by-priority",
-  "name": "Average resolution time by priority",
-  "datasource": "mock",
-  "sql": "SELECT priority, ROUND(AVG(DATEDIFF('HOUR', created_at, resolved_at)), 1) AS avg_resolution_hours FROM tickets WHERE resolved_at IS NOT NULL GROUP BY priority ORDER BY priority",
-  "timeoutSeconds": 5,
-  "maxRows": 10
-}

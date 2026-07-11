@@ -1,0 +1,9 @@
+{
+  "id": "kpi-critical-open",
+  "name": "Open critical tickets",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT COUNT(*) AS critical_open FROM tickets WHERE status <> 'CLOSED' AND priority = 'CRITICAL'",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

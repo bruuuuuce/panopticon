@@ -1,0 +1,9 @@
+{
+  "id": "payments-kpi-revenue-today",
+  "name": "Revenue today",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT COALESCE(SUM(amount), 0) AS revenue_today FROM payments WHERE status = 'SUCCEEDED' AND CAST(created_at AS DATE) = CURRENT_DATE",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

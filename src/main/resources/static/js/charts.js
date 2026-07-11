@@ -2,33 +2,42 @@
  * ECharts option builders for the panel types that render as charts.
  * Colors are read from the theme's CSS custom properties (theme.css) rather
  * than duplicated here, so the palette stays defined in one place.
+ *
+ * Read fresh on every call (not cached at module load): the theme can flip
+ * light/dark at runtime by time of day (see theme.js), and a chart's colors
+ * are baked into canvas draw calls at setOption() time rather than being
+ * live CSS — so the next option built after a flip must reflect the new
+ * palette, not whatever was resolved when this module first loaded.
  */
-const root = getComputedStyle(document.documentElement);
-const cssVar = (name) => root.getPropertyValue(name).trim();
+function getColors() {
+    const root = getComputedStyle(document.documentElement);
+    const cssVar = (name) => root.getPropertyValue(name).trim();
+    return {
+        text: cssVar('--text-secondary'),
+        muted: cssVar('--text-muted'),
+        grid: cssVar('--gridline'),
+        axis: cssVar('--axis'),
+        surface: cssVar('--surface'),
+        surfaceRaised: cssVar('--surface-raised'),
+        border: cssVar('--border'),
+        series1: cssVar('--series-1'),
+        categorical: [
+            cssVar('--series-1'), cssVar('--series-2'), cssVar('--series-3'), cssVar('--series-4'),
+            cssVar('--series-5'), cssVar('--series-6'), cssVar('--series-7'), cssVar('--series-8'),
+        ],
+    };
+}
 
-const colors = {
-    text: cssVar('--text-secondary'),
-    muted: cssVar('--text-muted'),
-    grid: cssVar('--gridline'),
-    axis: cssVar('--axis'),
-    surface: cssVar('--surface'),
-    surfaceRaised: cssVar('--surface-raised'),
-    border: cssVar('--border'),
-    series1: cssVar('--series-1'),
-    categorical: [
-        cssVar('--series-1'), cssVar('--series-2'), cssVar('--series-3'), cssVar('--series-4'),
-        cssVar('--series-5'), cssVar('--series-6'), cssVar('--series-7'), cssVar('--series-8'),
-    ],
-};
+function tooltipStyleOf(colors) {
+    return {
+        backgroundColor: colors.surfaceRaised,
+        borderColor: colors.border,
+        borderWidth: 1,
+        textStyle: { color: colors.text, fontSize: 12 },
+    };
+}
 
-const tooltipStyle = {
-    backgroundColor: colors.surfaceRaised,
-    borderColor: colors.border,
-    borderWidth: 1,
-    textStyle: { color: colors.text, fontSize: 12 },
-};
-
-function axisStyle() {
+function axisStyle(colors) {
     return {
         axisLine: { lineStyle: { color: colors.axis } },
         axisTick: { show: false },
@@ -49,8 +58,8 @@ function axisStyle() {
  * label as long as "BANK_TRANSFER" and got clipped; 40° keeps the same
  * category comfortably inside the panel.
  */
-function categoryAxisStyle() {
-    const style = axisStyle();
+function categoryAxisStyle(colors) {
+    const style = axisStyle(colors);
     style.axisLabel = { ...style.axisLabel, interval: 0, rotate: 40 };
     return style;
 }
@@ -71,17 +80,18 @@ function barGrid() {
 }
 
 function barOption(rows, xField, yField, seriesName) {
+    const colors = getColors();
     const categories = rows.map((r) => String(r[xField]));
     const values = rows.map((r) => Number(r[yField]));
     return {
         backgroundColor: 'transparent',
         grid: barGrid(),
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, ...tooltipStyle },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, ...tooltipStyleOf(colors) },
         // Bar categories are few and each one is identity, not a sample of a
         // continuum — every label must show (see categoryAxisStyle), unlike
         // the line chart's dense date axis below where eliding some ticks is fine.
-        xAxis: { type: 'category', data: categories, ...categoryAxisStyle() },
-        yAxis: { type: 'value', ...axisStyle(), splitNumber: 4 },
+        xAxis: { type: 'category', data: categories, ...categoryAxisStyle(colors) },
+        yAxis: { type: 'value', ...axisStyle(colors), splitNumber: 4 },
         series: [{
             name: seriesName || yField,
             type: 'bar',
@@ -93,14 +103,15 @@ function barOption(rows, xField, yField, seriesName) {
 }
 
 function lineOption(rows, xField, yField, seriesName) {
+    const colors = getColors();
     const categories = rows.map((r) => String(r[xField]));
     const values = rows.map((r) => Number(r[yField]));
     return {
         backgroundColor: 'transparent',
         grid: chartGrid(),
-        tooltip: { trigger: 'axis', ...tooltipStyle },
-        xAxis: { type: 'category', data: categories, boundaryGap: false, ...axisStyle() },
-        yAxis: { type: 'value', ...axisStyle(), splitNumber: 4 },
+        tooltip: { trigger: 'axis', ...tooltipStyleOf(colors) },
+        xAxis: { type: 'category', data: categories, boundaryGap: false, ...axisStyle(colors) },
+        yAxis: { type: 'value', ...axisStyle(colors), splitNumber: 4 },
         series: [{
             name: seriesName || yField,
             type: 'line',
@@ -116,11 +127,12 @@ function lineOption(rows, xField, yField, seriesName) {
 }
 
 function donutOption(rows, labelField, valueField) {
+    const colors = getColors();
     const data = rows.map((r) => ({ name: String(r[labelField]), value: Number(r[valueField]) }));
     return {
         backgroundColor: 'transparent',
         color: colors.categorical,
-        tooltip: { trigger: 'item', ...tooltipStyle },
+        tooltip: { trigger: 'item', ...tooltipStyleOf(colors) },
         legend: {
             orient: 'vertical',
             right: 4,

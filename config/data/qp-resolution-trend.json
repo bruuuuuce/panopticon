@@ -1,0 +1,9 @@
+{
+  "id": "qp-resolution-trend",
+  "name": "Average resolution time trend (last 14 days)",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT CAST(resolved_at AS DATE) AS day_bucket, ROUND(AVG(DATEDIFF('HOUR', created_at, resolved_at)), 1) AS avg_resolution_hours FROM tickets WHERE resolved_at IS NOT NULL AND resolved_at >= DATEADD('DAY', -14, CURRENT_TIMESTAMP) GROUP BY CAST(resolved_at AS DATE) ORDER BY day_bucket",
+  "timeoutMs": 5000,
+  "maxRows": 30
+}

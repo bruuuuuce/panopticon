@@ -1,0 +1,9 @@
+{
+  "id": "db-kpi-total-rows",
+  "name": "Total rows across all tables",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT SUM(row_count_estimate) AS total_rows FROM information_schema.tables WHERE table_schema = 'PUBLIC'",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

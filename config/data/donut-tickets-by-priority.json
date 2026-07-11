@@ -1,0 +1,9 @@
+{
+  "id": "donut-tickets-by-priority",
+  "name": "Open tickets by priority",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT priority, COUNT(*) AS ticket_count FROM tickets WHERE status <> 'CLOSED' GROUP BY priority ORDER BY priority",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

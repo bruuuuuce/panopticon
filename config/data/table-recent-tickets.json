@@ -1,0 +1,9 @@
+{
+  "id": "table-recent-tickets",
+  "name": "Most recent tickets",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT id, subject, customer, priority, status, assignee, created_at FROM tickets ORDER BY created_at DESC LIMIT 20",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

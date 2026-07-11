@@ -1,10 +1,11 @@
 package com.panopticon.api;
 
 import com.panopticon.api.dto.ApiError;
-import com.panopticon.query.QueryExecutionException;
-import com.panopticon.query.SqlGuardException;
-import com.panopticon.query.UnknownQueryException;
-import com.panopticon.registry.DatasourceRegistry;
+import com.panopticon.data.DataExecutionException;
+import com.panopticon.data.UnknownDataException;
+import com.panopticon.data.UnsupportedProviderException;
+import com.panopticon.data.jdbc.SqlGuardException;
+import com.panopticon.registry.DataSourceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -22,8 +23,8 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.of("not_found", e.getMessage()));
     }
 
-    @ExceptionHandler(UnknownQueryException.class)
-    public ResponseEntity<ApiError> handleUnknownQuery(UnknownQueryException e) {
+    @ExceptionHandler(UnknownDataException.class)
+    public ResponseEntity<ApiError> handleUnknownData(UnknownDataException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.of("not_found", e.getMessage()));
     }
 
@@ -32,15 +33,20 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiError.of("sql_rejected", e.getMessage()));
     }
 
-    @ExceptionHandler(DatasourceRegistry.NoSuchDatasourceException.class)
-    public ResponseEntity<ApiError> handleUnknownDatasource(DatasourceRegistry.NoSuchDatasourceException e) {
+    @ExceptionHandler(DataSourceRegistry.NoSuchDataSourceException.class)
+    public ResponseEntity<ApiError> handleUnknownDatasource(DataSourceRegistry.NoSuchDataSourceException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiError.of("unknown_datasource", e.getMessage()));
     }
 
-    @ExceptionHandler(QueryExecutionException.class)
-    public ResponseEntity<ApiError> handleQueryExecution(QueryExecutionException e) {
-        log.warn("Query execution failed: {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiError.of("query_execution_failed", e.getMessage()));
+    @ExceptionHandler(UnsupportedProviderException.class)
+    public ResponseEntity<ApiError> handleUnsupportedProvider(UnsupportedProviderException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiError.of("unsupported_provider", e.getMessage()));
+    }
+
+    @ExceptionHandler(DataExecutionException.class)
+    public ResponseEntity<ApiError> handleDataExecution(DataExecutionException e) {
+        log.warn("Data execution failed: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiError.of("data_execution_failed", e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

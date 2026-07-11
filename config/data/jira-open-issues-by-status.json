@@ -1,0 +1,11 @@
+{
+  "id": "jira-open-issues-by-status",
+  "name": "Open issues by status",
+  "provider": "jira",
+  "datasource": "demo-jira",
+  "operation": "issue-count-by-field",
+  "jql": "project = DEMO AND statusCategory != Done",
+  "groupBy": "status",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

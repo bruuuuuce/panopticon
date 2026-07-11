@@ -1,0 +1,9 @@
+{
+  "id": "bar-tickets-by-assignee",
+  "name": "Open workload by assignee",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT assignee, COUNT(*) AS ticket_count FROM tickets WHERE status <> 'CLOSED' GROUP BY assignee ORDER BY ticket_count DESC",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

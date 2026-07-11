@@ -2,7 +2,7 @@ package com.panopticon.loader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.panopticon.model.DashboardDefinition;
-import com.panopticon.model.QueryDefinition;
+import com.panopticon.model.DataDefinition;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -16,8 +16,8 @@ import java.util.List;
 /**
  * Reads dashboard-as-code JSON files from a directory. Each file must
  * contain exactly one definition; the directory is the unit of "a
- * dashboard/query set", not the file (keeps authoring simple: one file per
- * dashboard or query).
+ * dashboard/data set", not the file (keeps authoring simple: one file per
+ * dashboard or data definition).
  */
 @Component
 public class ConfigLoader {
@@ -28,8 +28,8 @@ public class ConfigLoader {
         this.objectMapper = objectMapper;
     }
 
-    public List<QueryDefinition> loadQueries(Path directory) {
-        return loadAll(directory, QueryDefinition.class);
+    public List<DataDefinition> loadDataDefinitions(Path directory) {
+        return loadAll(directory, DataDefinition.class);
     }
 
     public List<DashboardDefinition> loadDashboards(Path directory) {

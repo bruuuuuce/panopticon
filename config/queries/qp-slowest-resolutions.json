@@ -1,8 +1,0 @@
-{
-  "id": "qp-slowest-resolutions",
-  "name": "Slowest ticket resolutions",
-  "datasource": "mock",
-  "sql": "SELECT id, subject, priority, assignee, DATEDIFF('HOUR', created_at, resolved_at) AS resolution_hours FROM tickets WHERE resolved_at IS NOT NULL ORDER BY resolution_hours DESC LIMIT 10",
-  "timeoutSeconds": 5,
-  "maxRows": 10
-}

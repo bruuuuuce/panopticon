@@ -9,7 +9,7 @@
       "id": "kpi-avg-resolution",
       "title": "Avg Resolution Time",
       "type": "stat",
-      "queryRef": "kpi-avg-resolution",
+      "dataRef": "kpi-avg-resolution",
       "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "valueField": "avg_resolution_hours", "format": "decimal", "unit": "h" }
@@ -18,7 +18,7 @@
       "id": "kpi-sla-breaches",
       "title": "SLA Breaches (>24h)",
       "type": "stat",
-      "queryRef": "qp-kpi-sla-breaches",
+      "dataRef": "qp-kpi-sla-breaches",
       "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "valueField": "sla_breaches", "format": "number" }
@@ -27,7 +27,7 @@
       "id": "donut-resolution-buckets",
       "title": "Resolution Time Distribution",
       "type": "donut",
-      "queryRef": "qp-resolution-buckets",
+      "dataRef": "qp-resolution-buckets",
       "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "labelField": "bucket", "valueField": "ticket_count" }
@@ -36,7 +36,7 @@
       "id": "bar-resolution-by-priority",
       "title": "Avg Resolution by Priority",
       "type": "bar",
-      "queryRef": "qp-avg-resolution-by-priority",
+      "dataRef": "qp-avg-resolution-by-priority",
       "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "xField": "priority", "yField": "avg_resolution_hours", "seriesName": "Avg Hours" }
@@ -45,7 +45,7 @@
       "id": "line-resolution-trend",
       "title": "Resolution Time Trend (14d)",
       "type": "line",
-      "queryRef": "qp-resolution-trend",
+      "dataRef": "qp-resolution-trend",
       "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
       "refresh": { "intervalSeconds": 90, "enabled": true },
       "options": { "xField": "day_bucket", "yField": "avg_resolution_hours", "seriesName": "Avg Resolution (h)" }
@@ -54,7 +54,7 @@
       "id": "table-slowest",
       "title": "Slowest Resolutions",
       "type": "table",
-      "queryRef": "qp-slowest-resolutions",
+      "dataRef": "qp-slowest-resolutions",
       "grid": { "row": 3, "col": 1, "rowSpan": 2, "colSpan": 12 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": {

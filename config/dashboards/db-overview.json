@@ -9,7 +9,7 @@
       "id": "kpi-total-tables",
       "title": "Tables",
       "type": "stat",
-      "queryRef": "db-kpi-total-tables",
+      "dataRef": "db-kpi-total-tables",
       "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "valueField": "total_tables", "format": "number" }
@@ -18,7 +18,7 @@
       "id": "kpi-total-rows",
       "title": "Total Rows",
       "type": "stat",
-      "queryRef": "db-kpi-total-rows",
+      "dataRef": "db-kpi-total-rows",
       "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "valueField": "total_rows", "format": "number" }
@@ -27,7 +27,7 @@
       "id": "donut-table-inventory",
       "title": "Row Distribution",
       "type": "donut",
-      "queryRef": "db-table-inventory",
+      "dataRef": "db-table-inventory",
       "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "labelField": "table_name", "valueField": "row_count" }
@@ -36,7 +36,7 @@
       "id": "bar-table-inventory",
       "title": "Rows by Table",
       "type": "bar",
-      "queryRef": "db-table-inventory",
+      "dataRef": "db-table-inventory",
       "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": { "xField": "table_name", "yField": "row_count", "seriesName": "Rows" }
@@ -45,7 +45,7 @@
       "id": "table-column-inventory",
       "title": "Column Inventory",
       "type": "table",
-      "queryRef": "db-column-inventory",
+      "dataRef": "db-column-inventory",
       "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
       "refresh": { "intervalSeconds": 60, "enabled": true },
       "options": {

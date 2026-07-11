@@ -1,0 +1,9 @@
+{
+  "id": "kpi-open-tickets",
+  "name": "Open ticket count",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT COUNT(*) AS open_tickets FROM tickets WHERE status <> 'CLOSED'",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

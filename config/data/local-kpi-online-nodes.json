@@ -1,0 +1,9 @@
+{
+  "id": "local-kpi-online-nodes",
+  "name": "Online edge node count",
+  "provider": "jdbc",
+  "datasource": "local-sqlite",
+  "sql": "SELECT COUNT(*) AS online_nodes FROM edge_nodes WHERE status = 'ONLINE'",
+  "timeoutMs": 5000,
+  "maxRows": 1
+}

@@ -1,13 +1,16 @@
 package com.panopticon.loader;
 
+import com.panopticon.data.DataProviderRegistry;
+import com.panopticon.data.jdbc.JdbcDataProvider;
+import com.panopticon.data.jdbc.SqlGuard;
+import com.panopticon.data.jdbc.SqlGuardException;
+import com.panopticon.data.jira.JiraDataProvider;
 import com.panopticon.model.DashboardDefinition;
+import com.panopticon.model.DataDefinition;
 import com.panopticon.model.GridPosition;
 import com.panopticon.model.PanelDefinition;
 import com.panopticon.model.PanelType;
-import com.panopticon.model.QueryDefinition;
-import com.panopticon.query.SqlGuard;
-import com.panopticon.query.SqlGuardException;
-import com.panopticon.registry.DatasourceRegistry;
+import com.panopticon.registry.DataSourceRegistry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,9 +20,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Cross-checks parsed dashboards/queries: unique ids, panels referencing a
- * real query, queries referencing a configured datasource. Pure/stateless
- * so it can be reused both at startup (fail fast) and by the
+ * Cross-checks parsed dashboards/data definitions: unique ids, panels
+ * referencing a real data definition, data definitions referencing a
+ * configured datasource and a registered provider, provider-specific
+ * required fields (SQL for jdbc, operation for jira). Pure/stateless so it
+ * can be reused both at startup (fail fast) and by the
  * {@code /api/config/validate} dry-run endpoint.
  */
 public final class ConfigValidator {
@@ -28,34 +33,25 @@ public final class ConfigValidator {
     }
 
     public static ValidationResult validate(
-            List<QueryDefinition> queries, List<DashboardDefinition> dashboards, DatasourceRegistry datasourceRegistry) {
+            List<DataDefinition> dataDefinitions,
+            List<DashboardDefinition> dashboards,
+            DataSourceRegistry dataSourceRegistry,
+            DataProviderRegistry providerRegistry) {
 
         List<ValidationError> errors = new ArrayList<>();
-        Map<String, QueryDefinition> queryById = new HashMap<>();
+        Map<String, DataDefinition> dataById = new HashMap<>();
 
-        for (QueryDefinition query : queries) {
-            if (query.id() == null || query.id().isBlank()) {
-                errors.add(new ValidationError("query", "Query is missing an 'id'"));
+        for (DataDefinition data : dataDefinitions) {
+            if (data.id() == null || data.id().isBlank()) {
+                errors.add(new ValidationError("data", "Data definition is missing an 'id'"));
                 continue;
             }
-            if (queryById.containsKey(query.id())) {
-                errors.add(new ValidationError("query:" + query.id(), "Duplicate query id"));
+            if (dataById.containsKey(data.id())) {
+                errors.add(new ValidationError("data:" + data.id(), "Duplicate data id"));
                 continue;
             }
-            queryById.put(query.id(), query);
-            if (query.sql() == null || query.sql().isBlank()) {
-                errors.add(new ValidationError("query:" + query.id(), "Query is missing 'sql'"));
-            } else {
-                try {
-                    SqlGuard.assertReadOnly(query.sql());
-                } catch (SqlGuardException e) {
-                    errors.add(new ValidationError("query:" + query.id(), e.getMessage()));
-                }
-            }
-            if (query.datasource() == null || !datasourceRegistry.contains(query.datasource())) {
-                errors.add(new ValidationError("query:" + query.id(),
-                        "Unknown datasource '%s'".formatted(query.datasource())));
-            }
+            dataById.put(data.id(), data);
+            validateDataDefinition(data, dataSourceRegistry, providerRegistry, errors);
         }
 
         Set<String> dashboardIds = new HashSet<>();
@@ -79,9 +75,9 @@ public final class ConfigValidator {
                 } else if (!panelIds.add(panel.id())) {
                     errors.add(new ValidationError(panelSource, "Duplicate panel id within dashboard"));
                 }
-                if (panel.queryRef() == null || !queryById.containsKey(panel.queryRef())) {
+                if (panel.dataRef() == null || !dataById.containsKey(panel.dataRef())) {
                     errors.add(new ValidationError(panelSource,
-                            "References unknown queryRef '%s'".formatted(panel.queryRef())));
+                            "References unknown dataRef '%s'".formatted(panel.dataRef())));
                 }
                 if (panel.grid() == null) {
                     errors.add(new ValidationError(panelSource, "Panel is missing 'grid' position"));
@@ -96,7 +92,40 @@ public final class ConfigValidator {
             }
         }
 
-        return ValidationResult.failed(errors, dashboards.size(), queries.size());
+        return ValidationResult.failed(errors, dashboards.size(), dataDefinitions.size());
+    }
+
+    private static void validateDataDefinition(
+            DataDefinition data, DataSourceRegistry dataSourceRegistry, DataProviderRegistry providerRegistry, List<ValidationError> errors) {
+
+        String source = "data:" + data.id();
+
+        if (data.provider() == null || data.provider().isBlank()) {
+            errors.add(new ValidationError(source, "Data definition is missing 'provider'"));
+        } else if (!providerRegistry.supports(data.provider())) {
+            errors.add(new ValidationError(source,
+                    "Unsupported provider type '%s'. Registered providers: %s".formatted(data.provider(), providerRegistry.knownProviderTypes())));
+        }
+
+        if (data.datasource() == null || data.datasource().isBlank() || !dataSourceRegistry.contains(data.datasource())) {
+            errors.add(new ValidationError(source, "Unknown datasource '%s'".formatted(data.datasource())));
+        }
+
+        if (JdbcDataProvider.PROVIDER_TYPE.equals(data.provider())) {
+            if (data.sql() == null || data.sql().isBlank()) {
+                errors.add(new ValidationError(source, "jdbc data definition is missing 'sql'"));
+            } else {
+                try {
+                    SqlGuard.assertReadOnly(data.sql());
+                } catch (SqlGuardException e) {
+                    errors.add(new ValidationError(source, e.getMessage()));
+                }
+            }
+        } else if (JiraDataProvider.PROVIDER_TYPE.equals(data.provider())) {
+            if (data.operation() == null || data.operation().isBlank()) {
+                errors.add(new ValidationError(source, "jira data definition is missing 'operation'"));
+            }
+        }
     }
 
     private static void validateGridPosition(String panelSource, GridPosition grid, int gridColumns, List<ValidationError> errors) {
