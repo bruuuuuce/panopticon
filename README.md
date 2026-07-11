@@ -6,7 +6,18 @@ artifacts, not user-built reports. No JPA/Hibernate, no server-side chart
 rendering, no frontend framework/build step — a plain Spring Boot MVC app serving
 static assets, backed by JdbcTemplate + HikariCP.
 
-The split is deliberate and enforced by what each layer is allowed to know:
+## Screenshots
+
+| Dashboard picker | Monitor mode (1080p wall display) |
+|---|---|
+| ![Support Operations Overview dashboard](docs/screenshots/dashboard-support-ops.png) | ![Monitor mode rotating dashboards on a 1920x1080 display](docs/screenshots/monitor-mode.png) |
+
+![Payments Monitoring dashboard](docs/screenshots/dashboard-payments-monitoring.png)
+
+## Architecture overview
+
+The backend/frontend split is deliberate and enforced by what each layer is
+allowed to know:
 
 | Backend owns | Frontend owns |
 |---|---|
@@ -22,6 +33,60 @@ The frontend never talks SQL or datasources — it only ever calls
 `GET /api/dashboards/{id}/panels/{panelId}/data` and renders whatever tabular
 JSON comes back. All query/dashboard/datasource logic, and the query result
 cache, live entirely in the backend.
+
+**Request path**, every time a panel asks for data:
+
+```
+Browser (dashboard.js, polling on panel.refresh.intervalSeconds)
+  │  GET /api/dashboards/{id}/panels/{panelId}/data
+  ▼
+DashboardController ─▶ resolves panel.queryRef ─▶ QueryEngine.execute(queryId)
+                                                       │
+                                                       ├─▶ QueryRegistry        (queryRef → QueryDefinition)
+                                                       ├─▶ SqlGuard             (read-only check, every call)
+                                                       ├─▶ QueryResultCache     (per-query-id TTL; success + failure both cached)
+                                                       └─▶ DatasourceRegistry ─▶ HikariCP ─▶ JDBC ─▶ database
+                                                       │
+                                                       └─▶ PanelRuntimeTracker  (success/failure/duration/rowCount, per panel)
+```
+
+**Config load path**, once at startup (fail-fast: an invalid config aborts
+startup rather than running half-broken):
+
+```
+config/dashboards/*.json ─┐
+config/queries/*.json    ─┼─▶ ConfigLoader ─▶ ConfigValidator ─▶ DashboardRegistry / QueryRegistry
+application.yml (datasources) ─┘                                  (held in memory for the process lifetime)
+```
+
+## Safety notes
+
+Panopticon executes real SQL against real datasources on a schedule, on
+behalf of anyone who can load a dashboard page — treat query authoring with
+the same care as any other production data access:
+
+- **Use a genuinely read-only database user** for every datasource in
+  `panopticon.datasources.*`. The [SQL guard](#sql-read-only-guard) is
+  defense in depth, not a substitute for real permissions — see below for
+  exactly what it does and doesn't catch.
+- **Prefer dedicated reporting views over raw tables.** A view can pre-join,
+  pre-aggregate, and expose only the columns a dashboard actually needs — so
+  even a guard bypass or an overly broad `SELECT *` has nothing sensitive to
+  reach.
+- **Always set `timeoutSeconds`** on a query (default `10`). A slow or
+  locked query should time out and surface as a panel error, not hang a
+  connection-pool slot indefinitely.
+- **Always set `maxRows`** on a query (default `1000`). This bounds both the
+  JDBC driver (`Statement.setMaxRows`) and the row-shaping loop, so a query
+  that unexpectedly matches millions of rows can't OOM the process or blow
+  up a payload to the browser.
+- **Avoid expensive queries.** Aggregate (`GROUP BY`, `COUNT`, `SUM`) in the
+  database rather than pulling raw rows for the frontend to summarize; add a
+  `WHERE` clause bounding the time range for anything trend-shaped (see the
+  sample queries' `DATEADD(...)` filters); make sure the columns you filter
+  or join on are indexed. `cacheTtlSeconds` (default `10`) only protects
+  against *repeated* hits within the TTL window — it does nothing for a
+  query that's expensive on every single execution.
 
 ## Requirements
 
@@ -43,11 +108,29 @@ java -jar target/panopticon.jar
 
 The app starts on **http://localhost:8080** (override with `--server.port=<port>`
 if that's taken). No external database is required — it ships with an in-memory
-H2 "mock" datasource, seeded with ~80 synthetic support tickets on startup, so the
-two sample dashboards work out of the box:
+H2 "mock" datasource, seeded with synthetic tickets and payments on startup, so
+every sample dashboard works out of the box:
 
 - `http://localhost:8080/` — dashboard picker + live panels
 - `http://localhost:8080/monitor.html` — fullscreen rotation between dashboards
+
+## Sample dashboards
+
+Five dashboards ship under `config/dashboards/`, backed by 24 queries under
+`config/queries/`, all running against the bundled H2 schema (`tickets` and
+`payments` tables, seeded relative to "now" so they always look current):
+
+| Dashboard | What it shows |
+|---|---|
+| `support-ops` | Open tickets, avg resolution time, status/priority breakdowns, a 14-day volume trend, recent tickets |
+| `team-workload` | Critical backlog, open-ticket distribution by priority, workload by assignee |
+| `payments-monitoring` | Revenue today, success rate, payments by status/method, a 14-day volume trend, recent payments |
+| `db-overview` | The datasource's own schema — table/row counts and column inventory, read live from `information_schema` |
+| `query-performance` | Ticket SLA view — resolution-time distribution, breaches, avg resolution by priority, slowest resolutions |
+
+`db-overview` is worth calling out: its queries aren't against app tables at
+all, they're against H2's `information_schema` — showing Panopticon can be
+pointed at a database's own metadata just as easily as at application data.
 
 ## Configuration model
 
@@ -84,12 +167,7 @@ panopticon:
       max-pool-size: 10
 ```
 
-**Use a genuinely read-only database account, and preferably point queries at
-dedicated reporting views rather than raw tables.** The SQL guard (below) is a
-basic safety net — it blocks obviously dangerous statements by keyword, but it
-is not a complete SQL security system, and string-based checks can in
-principle be worked around by SQL it doesn't anticipate. The guard is defense
-in depth on top of real database permissions, never a substitute for them.
+See [Safety notes](#safety-notes) above before pointing this at a real database.
 
 ### Adding a query
 
@@ -108,7 +186,9 @@ One JSON file per query under `config/queries/`:
 ```
 
 `timeoutSeconds` (default `10`), `maxRows` (default `1000`) and
-`cacheTtlSeconds` (default `10`) are all optional.
+`cacheTtlSeconds` (default `10`) are all optional — but see
+[Safety notes](#safety-notes) for why you should set the first two
+deliberately rather than rely on the default for anything but a quick trial.
 
 Only `SELECT`/`WITH` statements pass the read-only guard — see
 [SQL read-only guard](#sql-read-only-guard) below for exactly what's rejected
@@ -244,26 +324,32 @@ src/main/java/com/panopticon/
 
 src/main/resources/
 ├── static/      Frontend (index.html, monitor.html, css/, js/)
-└── db/mock/     H2 demo schema + seed data
+└── db/mock/     H2 demo schema + seed data (tickets, payments)
 
 config/
-├── dashboards/  Dashboard JSON (sample: support-ops, team-workload)
-└── queries/     Query JSON (sample: 9 queries against the mock H2 schema)
+├── dashboards/  5 sample dashboards — see "Sample dashboards" above
+└── queries/     24 sample queries backing them
+
+docs/screenshots/  Images embedded in this README
 ```
 
 ## Frontend
 
-Plain HTML/CSS/JS (no build step) served from `static/`, using
+Plain HTML/CSS/JS ES modules (no build step) served from `static/`, using
 [Apache ECharts](https://echarts.apache.org/) (vendored locally in
 `static/js/vendor/`, no CDN dependency) for bar/line/donut charts and CSS Grid for
 layout. `js/dashboard.js` is the shared rendering engine used by both the picker
 page and monitor mode; each panel fetches and re-renders independently on its own
-`refresh.intervalSeconds`, with a status dot (ok/error/pending) and a relative
-"updated Xs ago" timestamp per panel.
+`refresh.intervalSeconds`, with a status dot (ok/error/pending), a "how often /
+how recently" label, a loading state, and an isolated per-panel error state
+(one panel failing never affects its siblings).
 
 Monitor mode (`/monitor.html`) rotates through dashboards whose
 `rotation.enabled` is true, showing each for its own `rotation.durationSeconds`,
-with pause/prev/next controls (also bindable via space/←/→) and a progress bar.
+with a dashboard-position indicator ("2 of 5"), a countdown to the next
+rotation, pause/prev/next controls (also bindable via space/←/→), a real
+Fullscreen API toggle (`F`), and a layout that stretches panels to fill the
+screen edge-to-edge instead of leaving dead space below a fixed row height.
 
 ## Query engine
 
@@ -308,7 +394,7 @@ still connect through a genuinely **read-only database user**, and preferably
 point queries at **dedicated reporting views** rather than raw tables, so that
 even a guard bypass has nothing destructive or sensitive to reach. The guard
 exists to catch authoring mistakes early and add defense in depth — never as a
-substitute for real database permissions.
+substitute for real database permissions. See [Safety notes](#safety-notes).
 
 ## Known limitations (by design, for this MVP)
 

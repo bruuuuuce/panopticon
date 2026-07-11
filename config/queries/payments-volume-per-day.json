@@ -1,0 +1,8 @@
+{
+  "id": "payments-volume-per-day",
+  "name": "Successful payment volume per day (last 14 days)",
+  "datasource": "mock",
+  "sql": "SELECT CAST(created_at AS DATE) AS day_bucket, ROUND(SUM(amount), 2) AS total_amount FROM payments WHERE status = 'SUCCEEDED' AND created_at >= DATEADD('DAY', -14, CURRENT_TIMESTAMP) GROUP BY CAST(created_at AS DATE) ORDER BY day_bucket",
+  "timeoutSeconds": 5,
+  "maxRows": 30
+}

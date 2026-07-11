@@ -1,0 +1,8 @@
+{
+  "id": "db-table-inventory",
+  "name": "Table inventory with row counts",
+  "datasource": "mock",
+  "sql": "SELECT table_name, row_count_estimate AS row_count FROM information_schema.tables WHERE table_schema = 'PUBLIC' ORDER BY table_name",
+  "timeoutSeconds": 5,
+  "maxRows": 50
+}

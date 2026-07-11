@@ -1,0 +1,8 @@
+{
+  "id": "db-column-inventory",
+  "name": "Column inventory",
+  "datasource": "mock",
+  "sql": "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'PUBLIC' ORDER BY table_name, ordinal_position",
+  "timeoutSeconds": 5,
+  "maxRows": 200
+}

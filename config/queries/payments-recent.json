@@ -1,0 +1,8 @@
+{
+  "id": "payments-recent",
+  "name": "Most recent payments",
+  "datasource": "mock",
+  "sql": "SELECT id, customer, amount, currency, method, status, created_at FROM payments ORDER BY created_at DESC LIMIT 20",
+  "timeoutSeconds": 5,
+  "maxRows": 20
+}

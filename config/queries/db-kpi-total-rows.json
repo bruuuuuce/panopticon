@@ -1,0 +1,8 @@
+{
+  "id": "db-kpi-total-rows",
+  "name": "Total rows across all tables",
+  "datasource": "mock",
+  "sql": "SELECT SUM(row_count_estimate) AS total_rows FROM information_schema.tables WHERE table_schema = 'PUBLIC'",
+  "timeoutSeconds": 5,
+  "maxRows": 1
+}

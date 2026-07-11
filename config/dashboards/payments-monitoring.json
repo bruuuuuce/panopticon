@@ -1,0 +1,65 @@
+{
+  "id": "payments-monitoring",
+  "title": "Payments Monitoring",
+  "description": "Live payment volume, success rate and recent transactions.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": true },
+  "panels": [
+    {
+      "id": "kpi-revenue-today",
+      "title": "Revenue Today",
+      "type": "stat",
+      "queryRef": "payments-kpi-revenue-today",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": { "valueField": "revenue_today", "format": "decimal", "unit": "USD" }
+    },
+    {
+      "id": "kpi-success-rate",
+      "title": "Success Rate",
+      "type": "stat",
+      "queryRef": "payments-kpi-success-rate",
+      "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": { "valueField": "success_rate", "format": "decimal", "unit": "%" }
+    },
+    {
+      "id": "donut-status",
+      "title": "Payments by Status",
+      "type": "donut",
+      "queryRef": "payments-by-status",
+      "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "labelField": "status", "valueField": "payment_count" }
+    },
+    {
+      "id": "bar-method",
+      "title": "Payments by Method",
+      "type": "bar",
+      "queryRef": "payments-by-method",
+      "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "xField": "method", "yField": "payment_count", "seriesName": "Payments" }
+    },
+    {
+      "id": "line-volume",
+      "title": "Payment Volume (14d)",
+      "type": "line",
+      "queryRef": "payments-volume-per-day",
+      "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 90, "enabled": true },
+      "options": { "xField": "day_bucket", "yField": "total_amount", "seriesName": "Revenue (USD)" }
+    },
+    {
+      "id": "table-recent",
+      "title": "Recent Payments",
+      "type": "table",
+      "queryRef": "payments-recent",
+      "grid": { "row": 3, "col": 1, "rowSpan": 2, "colSpan": 12 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": {
+        "columns": ["id", "customer", "amount", "currency", "method", "status", "created_at"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "payments-kpi-success-rate",
+  "name": "Payment success rate",
+  "datasource": "mock",
+  "sql": "SELECT ROUND(100.0 * SUM(CASE WHEN status = 'SUCCEEDED' THEN 1 ELSE 0 END) / COUNT(*), 1) AS success_rate FROM payments",
+  "timeoutSeconds": 5,
+  "maxRows": 1
+}

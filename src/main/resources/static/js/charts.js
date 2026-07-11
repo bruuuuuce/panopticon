@@ -41,13 +41,17 @@ function axisStyle() {
  * Category axis labels for bar/line charts. ECharts silently drops labels
  * it thinks won't fit ("interval: auto") rather than shrinking or wrapping
  * them — at a narrow panel width that reads as missing data, not a layout
- * choice. `interval: 0` forces every category to render; a small fixed
+ * choice. `interval: 0` forces every category to render; a steep-ish fixed
  * rotation keeps them from colliding once a panel gets tight, without
- * needing to measure the panel's actual pixel width up front.
+ * needing to measure the panel's actual pixel width up front. The steeper
+ * the angle, the less each label reaches sideways into its neighbor (or, for
+ * the leftmost bar, past the chart's own edge) — 20° was too shallow for a
+ * label as long as "BANK_TRANSFER" and got clipped; 40° keeps the same
+ * category comfortably inside the panel.
  */
 function categoryAxisStyle() {
     const style = axisStyle();
-    style.axisLabel = { ...style.axisLabel, interval: 0, rotate: 20 };
+    style.axisLabel = { ...style.axisLabel, interval: 0, rotate: 40 };
     return style;
 }
 
@@ -55,12 +59,23 @@ function chartGrid() {
     return { left: 6, right: 16, top: 12, bottom: 6, containLabel: true };
 }
 
+/**
+ * Bar categories are rotated (see categoryAxisStyle) so long labels like
+ * "BANK_TRANSFER" don't get silently dropped — but a rotated label on the
+ * leftmost bar leans further left than an unrotated one, and containLabel's
+ * auto-sizing doesn't always give it enough room before the chart's own
+ * edge. A wider explicit left margin gives it somewhere to lean into.
+ */
+function barGrid() {
+    return { left: 36, right: 16, top: 12, bottom: 6, containLabel: true };
+}
+
 function barOption(rows, xField, yField, seriesName) {
     const categories = rows.map((r) => String(r[xField]));
     const values = rows.map((r) => Number(r[yField]));
     return {
         backgroundColor: 'transparent',
-        grid: chartGrid(),
+        grid: barGrid(),
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, ...tooltipStyle },
         // Bar categories are few and each one is identity, not a sample of a
         // continuum — every label must show (see categoryAxisStyle), unlike
