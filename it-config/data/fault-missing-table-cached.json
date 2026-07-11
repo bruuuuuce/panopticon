@@ -1,0 +1,8 @@
+{
+  "id": "fault-missing-table-cached",
+  "name": "[fault injection] Same as fault-missing-table but with a real cache TTL, used to prove failures are negatively cached",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT * FROM table_that_appears_mid_test",
+  "cacheTtlSeconds": 3
+}

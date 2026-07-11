@@ -1,0 +1,8 @@
+{
+  "id": "tickets-count-cached",
+  "name": "Ticket count with a real cache TTL, used to prove concurrent refreshes collapse into one execution",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT COUNT(*) AS n FROM tickets",
+  "cacheTtlSeconds": 6
+}

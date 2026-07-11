@@ -60,6 +60,16 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- Only used by the production-like integration test suite (com.panopticon.it) to poll
+         concurrent state (background traffic simulator, async event pipeline) without flaky
+         Thread.sleep()-based waits. Test scope only. -->
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.2.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -68,6 +78,23 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!-- Classes named *IT.java (com.panopticon.it) are the production-like integration
+           suite: slower (real SQLite files, background traffic, concurrency/lock stress), so
+           they run under `mvn verify` via failsafe, not on every `mvn test`. Plain unit tests
+           (e.g. *Test.java, including SqlGuardProductionLikeScenariosTest) still run under
+           surefire/`mvn test` as usual. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <!-- The codebase uses Java 21 records/pattern-matching; building with an
            older JDK fails with cryptic "class, interface, or enum expected"

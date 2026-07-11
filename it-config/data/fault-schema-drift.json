@@ -1,0 +1,8 @@
+{
+  "id": "fault-schema-drift",
+  "name": "[fault injection] Query bound to a column another service may rename out-of-band",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT period, total_amount FROM legacy_billing_summary",
+  "cacheTtlSeconds": 0
+}

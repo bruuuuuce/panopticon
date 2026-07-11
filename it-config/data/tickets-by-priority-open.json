@@ -1,0 +1,8 @@
+{
+  "id": "tickets-by-priority-open",
+  "name": "Open tickets by priority",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT priority, COUNT(*) AS ticket_count FROM tickets WHERE status NOT IN ('RESOLVED','CLOSED') GROUP BY priority",
+  "cacheTtlSeconds": 0
+}

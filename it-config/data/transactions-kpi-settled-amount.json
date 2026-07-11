@@ -1,0 +1,8 @@
+{
+  "id": "transactions-kpi-settled-amount",
+  "name": "Settled amount",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT COALESCE(SUM(amount_cents), 0) AS settled_amount_cents FROM transactions WHERE status = 'SETTLED'",
+  "cacheTtlSeconds": 0
+}

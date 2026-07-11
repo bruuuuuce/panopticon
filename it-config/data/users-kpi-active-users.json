@@ -1,0 +1,8 @@
+{
+  "id": "users-kpi-active-users",
+  "name": "Active users",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT COUNT(*) AS active_users FROM users WHERE status = 'ACTIVE'",
+  "cacheTtlSeconds": 0
+}

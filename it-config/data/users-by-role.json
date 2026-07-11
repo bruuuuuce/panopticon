@@ -1,0 +1,8 @@
+{
+  "id": "users-by-role",
+  "name": "Users by role",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT role, COUNT(*) AS user_count FROM users GROUP BY role",
+  "cacheTtlSeconds": 0
+}

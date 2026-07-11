@@ -1,0 +1,8 @@
+{
+  "id": "tickets-kpi-critical",
+  "name": "Open critical tickets",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT COUNT(*) AS critical_tickets FROM tickets WHERE priority = 'CRITICAL' AND status NOT IN ('RESOLVED','CLOSED')",
+  "cacheTtlSeconds": 0
+}

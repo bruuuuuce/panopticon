@@ -1,0 +1,8 @@
+{
+  "id": "tickets-kpi-open",
+  "name": "Open tickets",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT COUNT(*) AS open_tickets FROM tickets WHERE status NOT IN ('RESOLVED','CLOSED')",
+  "cacheTtlSeconds": 0
+}

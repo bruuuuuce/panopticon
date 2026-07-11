@@ -1,0 +1,42 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: panopticon-it
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+# Fully self-contained config for the com.panopticon.it production-like integration
+# suite. Loaded via spring.config.location so it replaces (not merges with) the
+# app's normal application.yml - the demo-h2/local-sqlite/demo-jira datasources
+# and config/dashboards, config/data are irrelevant here and would just be dead
+# weight. it-config/* mirrors config/* but holds test-only fixture dashboards
+# built for this suite (see AbstractProductionLikeIT for why they live outside
+# src/test/resources: ConfigLoader reads plain filesystem directories, not the
+# classpath).
+panopticon:
+  config:
+    dashboards-path: it-config/dashboards
+    data-path: it-config/data
+  datasources:
+    # jdbc-url is overrided per test class by AbstractProductionLikeIT's
+    # @DynamicPropertySource, pointing at a fresh temp-file SQLite database.
+    # read-only is false for the same reason demo-h2/local-sqlite are: this
+    # pool also runs initSchema/initData at startup, which needs write access.
+    # SqlGuard is the actual boundary that keeps every data definition
+    # read-only, exactly as in production (see SqlGuard/README "Safety notes").
+    prod-like-sqlite:
+      provider: jdbc
+      driver-class-name: org.sqlite.JDBC
+      jdbc-url: "jdbc:sqlite:file::memory:?cache=shared"
+      dialect: sqlite
+      read-only: false
+      max-pool-size: 3
+      init-schema: "classpath:db/production-like/schema.sql"
+      init-data: "classpath:db/production-like/seed.sql"
+
+logging:
+  level:
+    com.panopticon: INFO

@@ -1,0 +1,9 @@
+{
+  "id": "fault-maxrows-probe",
+  "name": "[fault injection] Query with a maxRows well below the real row count",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT id FROM event_outbox ORDER BY id",
+  "maxRows": 5,
+  "cacheTtlSeconds": 0
+}

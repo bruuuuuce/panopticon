@@ -1,0 +1,9 @@
+{
+  "id": "users-recent",
+  "name": "Recently created users",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT id, username, role, status, created_at FROM users ORDER BY id DESC LIMIT 25",
+  "maxRows": 25,
+  "cacheTtlSeconds": 0
+}

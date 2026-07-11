@@ -1,0 +1,9 @@
+{
+  "id": "tickets-recent",
+  "name": "Recent tickets",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT id, subject, status, priority, created_at FROM tickets ORDER BY id DESC LIMIT 25",
+  "maxRows": 25,
+  "cacheTtlSeconds": 0
+}

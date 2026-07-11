@@ -1,0 +1,54 @@
+{
+  "id": "user-operations",
+  "title": "User Operations",
+  "description": "Integration-test fixture dashboard: user management and abuse/incident reports (segnalazioni), fed by ProductionTrafficSimulator.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": false },
+  "panels": [
+    {
+      "id": "kpi-active-users",
+      "title": "Active Users",
+      "type": "stat",
+      "dataRef": "users-kpi-active-users",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "valueField": "active_users", "format": "number" }
+    },
+    {
+      "id": "kpi-open-reports",
+      "title": "Open Reports",
+      "type": "stat",
+      "dataRef": "reports-kpi-open",
+      "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "valueField": "open_reports", "format": "number" }
+    },
+    {
+      "id": "donut-users-by-role",
+      "title": "Users by Role",
+      "type": "donut",
+      "dataRef": "users-by-role",
+      "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "labelField": "role", "valueField": "user_count" }
+    },
+    {
+      "id": "bar-reports-by-severity",
+      "title": "Open Reports by Severity",
+      "type": "bar",
+      "dataRef": "reports-by-severity-open",
+      "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "xField": "severity", "yField": "report_count", "seriesName": "Open reports" }
+    },
+    {
+      "id": "table-recent-users",
+      "title": "Recent Users",
+      "type": "table",
+      "dataRef": "users-recent",
+      "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "columns": ["id", "username", "role", "status", "created_at"] }
+    }
+  ]
+}

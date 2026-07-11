@@ -1,0 +1,8 @@
+{
+  "id": "reports-kpi-open",
+  "name": "Open reports",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT COUNT(*) AS open_reports FROM reports WHERE status IN ('NEW','UNDER_REVIEW','ESCALATED')",
+  "cacheTtlSeconds": 0
+}

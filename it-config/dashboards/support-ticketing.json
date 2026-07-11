@@ -1,0 +1,63 @@
+{
+  "id": "support-ticketing",
+  "title": "Support Ticketing",
+  "description": "Integration-test fixture dashboard: the support ticket lifecycle (OPEN -> IN_PROGRESS -> WAITING_CUSTOMER -> RESOLVED -> CLOSED), fed by ProductionTrafficSimulator.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": false },
+  "panels": [
+    {
+      "id": "kpi-open-tickets",
+      "title": "Open Tickets",
+      "type": "stat",
+      "dataRef": "tickets-kpi-open",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "valueField": "open_tickets", "format": "number" }
+    },
+    {
+      "id": "kpi-critical-tickets",
+      "title": "Critical Open Tickets",
+      "type": "stat",
+      "dataRef": "tickets-kpi-critical",
+      "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "valueField": "critical_tickets", "format": "number" }
+    },
+    {
+      "id": "bar-tickets-by-status",
+      "title": "Tickets by Status",
+      "type": "bar",
+      "dataRef": "tickets-by-status",
+      "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "xField": "status", "yField": "ticket_count", "seriesName": "Tickets" }
+    },
+    {
+      "id": "donut-tickets-by-priority",
+      "title": "Open Tickets by Priority",
+      "type": "donut",
+      "dataRef": "tickets-by-priority-open",
+      "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "labelField": "priority", "valueField": "ticket_count" }
+    },
+    {
+      "id": "line-tickets-created-per-minute",
+      "title": "Tickets Created / Minute",
+      "type": "line",
+      "dataRef": "tickets-created-per-minute",
+      "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "xField": "minute", "yField": "ticket_count", "seriesName": "Tickets created" }
+    },
+    {
+      "id": "table-recent-tickets",
+      "title": "Recent Tickets",
+      "type": "table",
+      "dataRef": "tickets-recent",
+      "grid": { "row": 3, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "columns": ["id", "subject", "status", "priority", "created_at"] }
+    }
+  ]
+}

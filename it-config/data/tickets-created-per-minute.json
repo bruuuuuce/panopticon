@@ -1,0 +1,8 @@
+{
+  "id": "tickets-created-per-minute",
+  "name": "Tickets created per minute",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT strftime('%Y-%m-%dT%H:%M:00', created_at) AS minute, COUNT(*) AS ticket_count FROM tickets GROUP BY minute ORDER BY minute",
+  "cacheTtlSeconds": 0
+}

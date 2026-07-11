@@ -1,0 +1,9 @@
+{
+  "id": "transactions-recent-failed",
+  "name": "Recently failed transactions",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT id, user_id, amount_cents, currency, status, created_at FROM transactions WHERE status = 'FAILED' ORDER BY id DESC LIMIT 25",
+  "maxRows": 25,
+  "cacheTtlSeconds": 0
+}

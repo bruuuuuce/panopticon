@@ -1,0 +1,8 @@
+{
+  "id": "reports-by-severity-open",
+  "name": "Open reports by severity",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT severity, COUNT(*) AS report_count FROM reports WHERE status IN ('NEW','UNDER_REVIEW','ESCALATED') GROUP BY severity",
+  "cacheTtlSeconds": 0
+}

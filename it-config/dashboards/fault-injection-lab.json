@@ -1,0 +1,72 @@
+{
+  "id": "fault-injection-lab",
+  "title": "Fault Injection Lab",
+  "description": "Integration-test fixture dashboard: deliberately broken/adverse panels (missing table, empty table, schema drift, lock contention, maxRows truncation, mismatched field options), accessed through the real dashboard/panel HTTP path rather than DataEngine directly.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": false },
+  "panels": [
+    {
+      "id": "panel-missing-table",
+      "title": "[fault] Missing Table",
+      "type": "table",
+      "dataRef": "fault-missing-table",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": {}
+    },
+    {
+      "id": "panel-empty-table",
+      "title": "[fault] Always-Empty Table",
+      "type": "table",
+      "dataRef": "fault-empty-table",
+      "grid": { "row": 1, "col": 5, "rowSpan": 1, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": {}
+    },
+    {
+      "id": "panel-empty-filtered",
+      "title": "[fault] Populated Table, Zero Matching Rows",
+      "type": "table",
+      "dataRef": "fault-empty-filtered",
+      "grid": { "row": 1, "col": 9, "rowSpan": 1, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": {}
+    },
+    {
+      "id": "panel-schema-drift",
+      "title": "[fault] Schema Drift",
+      "type": "table",
+      "dataRef": "fault-schema-drift",
+      "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": {}
+    },
+    {
+      "id": "panel-locked-db",
+      "title": "[fault] Locked Database Probe",
+      "type": "stat",
+      "dataRef": "fault-locked-probe",
+      "grid": { "row": 2, "col": 5, "rowSpan": 1, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "valueField": "n", "format": "number" }
+    },
+    {
+      "id": "panel-maxrows-truncation",
+      "title": "[fault] maxRows Truncation",
+      "type": "table",
+      "dataRef": "fault-maxrows-probe",
+      "grid": { "row": 2, "col": 9, "rowSpan": 1, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": {}
+    },
+    {
+      "id": "panel-mismatched-fields",
+      "title": "[fault] Mismatched Field Options",
+      "type": "bar",
+      "dataRef": "fault-mismatched-fields",
+      "grid": { "row": 3, "col": 1, "rowSpan": 1, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "xField": "category", "yField": "value", "seriesName": "Mismatched" }
+    }
+  ]
+}

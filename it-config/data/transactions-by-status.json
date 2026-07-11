@@ -1,0 +1,8 @@
+{
+  "id": "transactions-by-status",
+  "name": "Transactions by status",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT status, COUNT(*) AS transaction_count FROM transactions GROUP BY status",
+  "cacheTtlSeconds": 0
+}

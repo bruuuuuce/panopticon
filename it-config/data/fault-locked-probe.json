@@ -1,0 +1,9 @@
+{
+  "id": "fault-locked-probe",
+  "name": "[fault injection] Cheap probe query used as the target of the exclusive-lock stress test",
+  "provider": "jdbc",
+  "datasource": "prod-like-sqlite",
+  "sql": "SELECT COUNT(*) AS n FROM tickets",
+  "timeoutMs": 3000,
+  "cacheTtlSeconds": 0
+}

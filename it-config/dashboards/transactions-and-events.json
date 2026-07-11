@@ -1,0 +1,63 @@
+{
+  "id": "transactions-and-events",
+  "title": "Transactions & Event Pipeline",
+  "description": "Integration-test fixture dashboard: payment transactions and the async store-and-process event_outbox pipeline, fed by ProductionTrafficSimulator.",
+  "gridColumns": 12,
+  "rotation": { "durationSeconds": 20, "enabled": false },
+  "panels": [
+    {
+      "id": "kpi-settled-amount",
+      "title": "Settled Amount (cents)",
+      "type": "stat",
+      "dataRef": "transactions-kpi-settled-amount",
+      "grid": { "row": 1, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "valueField": "settled_amount_cents", "format": "number" }
+    },
+    {
+      "id": "kpi-dead-letter-events",
+      "title": "Dead-lettered Events",
+      "type": "stat",
+      "dataRef": "events-kpi-dead-letter",
+      "grid": { "row": 1, "col": 4, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "valueField": "dead_letter_events", "format": "number" }
+    },
+    {
+      "id": "bar-transactions-by-status",
+      "title": "Transactions by Status",
+      "type": "bar",
+      "dataRef": "transactions-by-status",
+      "grid": { "row": 1, "col": 7, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "xField": "status", "yField": "transaction_count", "seriesName": "Transactions" }
+    },
+    {
+      "id": "donut-events-by-status",
+      "title": "Async Events by Status",
+      "type": "donut",
+      "dataRef": "events-by-status",
+      "grid": { "row": 1, "col": 10, "rowSpan": 2, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "labelField": "status", "valueField": "event_count" }
+    },
+    {
+      "id": "line-transaction-volume-per-minute",
+      "title": "Transaction Volume / Minute",
+      "type": "line",
+      "dataRef": "transactions-volume-per-minute",
+      "grid": { "row": 2, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "xField": "minute", "yField": "volume_cents", "seriesName": "Volume (cents)" }
+    },
+    {
+      "id": "table-recent-failed-transactions",
+      "title": "Recently Failed Transactions",
+      "type": "table",
+      "dataRef": "transactions-recent-failed",
+      "grid": { "row": 3, "col": 1, "rowSpan": 1, "colSpan": 6 },
+      "refresh": { "intervalSeconds": 10, "enabled": true },
+      "options": { "columns": ["id", "user_id", "amount_cents", "currency", "status", "created_at"] }
+    }
+  ]
+}
