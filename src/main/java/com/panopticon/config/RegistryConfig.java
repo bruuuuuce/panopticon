@@ -13,7 +13,6 @@ import com.panopticon.registry.DataSourceRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -27,20 +26,20 @@ import java.util.List;
 public class RegistryConfig {
 
     @Bean
-    public DataRegistry dataRegistry(ConfigLoader loader, ConfigPathsProperties paths) {
-        List<DataDefinition> definitions = loader.loadDataDefinitions(Path.of(paths.dataPath()));
+    public DataRegistry dataRegistry(ConfigLoader loader, DashboardConfigLocations locations) {
+        List<DataDefinition> definitions = loader.loadDataDefinitions(locations.data());
         return new DataRegistry(definitions);
     }
 
     @Bean
     public DashboardRegistry dashboardRegistry(
             ConfigLoader loader,
-            ConfigPathsProperties paths,
+            DashboardConfigLocations locations,
             DataRegistry dataRegistry,
             DataSourceRegistry dataSourceRegistry,
             DataProviderRegistry providerRegistry) {
 
-        List<DashboardDefinition> dashboards = loader.loadDashboards(Path.of(paths.dashboardsPath()));
+        List<DashboardDefinition> dashboards = loader.loadDashboards(locations.dashboards());
         ValidationResult result = ConfigValidator.validate(
                 dataRegistry.all().stream().toList(), dashboards, dataSourceRegistry, providerRegistry);
         if (!result.valid()) {

@@ -1,6 +1,6 @@
 package com.panopticon.api;
 
-import com.panopticon.config.ConfigPathsProperties;
+import com.panopticon.config.DashboardConfigLocations;
 import com.panopticon.data.DataProviderRegistry;
 import com.panopticon.loader.ConfigLoadException;
 import com.panopticon.loader.ConfigLoader;
@@ -14,11 +14,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Dry-run validation of the config/ directory as it currently sits on disk.
+ * Dry-run validation of the dashboard/data config as it currently sits on
+ * disk, at whatever locations are effectively in play (see
+ * {@link DashboardConfigLocations} - the default config/ directories, or
+ * whatever {@code --dashboards}/{@code --data} were started with).
  * Deliberately does not swap the live registries: this endpoint is meant for
  * authoring feedback ("will this config load cleanly?"), not for hot
  * reload, which is out of scope for the MVP.
@@ -28,17 +30,17 @@ import java.util.List;
 public class ConfigValidationController {
 
     private final ConfigLoader configLoader;
-    private final ConfigPathsProperties configPaths;
+    private final DashboardConfigLocations locations;
     private final DataSourceRegistry dataSourceRegistry;
     private final DataProviderRegistry providerRegistry;
 
     public ConfigValidationController(
             ConfigLoader configLoader,
-            ConfigPathsProperties configPaths,
+            DashboardConfigLocations locations,
             DataSourceRegistry dataSourceRegistry,
             DataProviderRegistry providerRegistry) {
         this.configLoader = configLoader;
-        this.configPaths = configPaths;
+        this.locations = locations;
         this.dataSourceRegistry = dataSourceRegistry;
         this.providerRegistry = providerRegistry;
     }
@@ -46,8 +48,8 @@ public class ConfigValidationController {
     @PostMapping("/validate")
     public ValidationResult validate() {
         try {
-            List<DataDefinition> dataDefinitions = configLoader.loadDataDefinitions(Path.of(configPaths.dataPath()));
-            List<DashboardDefinition> dashboards = configLoader.loadDashboards(Path.of(configPaths.dashboardsPath()));
+            List<DataDefinition> dataDefinitions = configLoader.loadDataDefinitions(locations.data());
+            List<DashboardDefinition> dashboards = configLoader.loadDashboards(locations.dashboards());
             return ConfigValidator.validate(dataDefinitions, dashboards, dataSourceRegistry, providerRegistry);
         } catch (ConfigLoadException e) {
             return ValidationResult.failed(List.of(new ValidationError("config", e.getMessage())), 0, 0);
