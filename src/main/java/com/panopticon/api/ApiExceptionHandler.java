@@ -35,7 +35,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(DataSourceRegistry.NoSuchDataSourceException.class)
     public ResponseEntity<ApiError> handleUnknownDatasource(DataSourceRegistry.NoSuchDataSourceException e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiError.of("unknown_datasource", e.getMessage()));
+        // The exception message enumerates every configured datasource name -
+        // useful in the log, not something to hand to an unauthenticated client.
+        log.error("Datasource lookup failed: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiError.of("unknown_datasource", "The datasource referenced by this data definition is not configured"));
     }
 
     @ExceptionHandler(UnsupportedProviderException.class)
@@ -51,7 +55,9 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception e) {
+        // Raw messages from arbitrary exceptions can leak paths, SQL or driver
+        // internals; the stack trace goes to the log, the client gets a constant.
         log.error("Unhandled error", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiError.of("internal_error", e.getMessage()));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiError.of("internal_error", "Unexpected internal error"));
     }
 }

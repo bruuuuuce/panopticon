@@ -73,6 +73,11 @@ public final class ConfigValidator {
                 errors.add(new ValidationError("dashboard:" + dashboard.id(),
                         "'accentColor' must be a hex color like #3987e5, got '%s'".formatted(dashboard.accentColor())));
             }
+            if (dashboard.rotation().enabled() && dashboard.rotation().durationSeconds() <= 0) {
+                errors.add(new ValidationError("dashboard:" + dashboard.id(),
+                        "'rotation.durationSeconds' must be > 0 when rotation is enabled, got %d".formatted(
+                                dashboard.rotation().durationSeconds())));
+            }
 
             Set<String> panelIds = new HashSet<>();
             for (PanelDefinition panel : dashboard.panels()) {
@@ -95,6 +100,11 @@ public final class ConfigValidator {
                     errors.add(new ValidationError(panelSource, "Panel is missing 'type'"));
                 } else {
                     validateChartMappings(panelSource, panel.type(), panel.options(), errors);
+                }
+                if (panel.refresh() != null && panel.refresh().enabled() && panel.refresh().intervalSeconds() <= 0) {
+                    errors.add(new ValidationError(panelSource,
+                            "'refresh.intervalSeconds' must be > 0 when refresh is enabled, got %d".formatted(
+                                    panel.refresh().intervalSeconds())));
                 }
             }
         }
