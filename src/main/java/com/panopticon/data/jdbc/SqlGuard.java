@@ -59,14 +59,22 @@ public final class SqlGuard {
             if (idx < 0) {
                 return false;
             }
-            boolean startBoundary = idx == 0 || !Character.isLetterOrDigit(text.charAt(idx - 1));
+            boolean startBoundary = idx == 0 || !isIdentifierChar(text.charAt(idx - 1));
             int endIdx = idx + word.length();
-            boolean endBoundary = endIdx == text.length() || !Character.isLetterOrDigit(text.charAt(endIdx));
+            boolean endBoundary = endIdx == text.length() || !isIdentifierChar(text.charAt(endIdx));
             if (startBoundary && endBoundary) {
                 return true;
             }
             from = idx + word.length();
         }
+    }
+
+    /**
+     * SQL identifiers may contain underscores (create_date, delete_flag), so '_'
+     * must count as part of a word or those columns would match forbidden keywords.
+     */
+    private static boolean isIdentifierChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_';
     }
 
     /** Blanks out string literals and comments (preserving length/position) so keyword checks don't false-positive/negative on literal content. */

@@ -153,6 +153,9 @@ async function refresh(dashboardId, state) {
     // interval tick fires; skip that tick rather than let two fetches for the
     // same panel race and render out of order.
     if (state.refreshing) return;
+    // Don't poll a tab nobody can see; the visibilitychange handler in mount()
+    // refreshes everything as soon as the page is shown again.
+    if (document.hidden) return;
     state.refreshing = true;
     try {
         const result = await Api.getPanelData(dashboardId, state.panel.id);
@@ -217,8 +220,21 @@ function mount(gridEl, dashboard, { fillHeight = false } = {}) {
         }
     }, 1000);
 
-    const resizeHandler = () => states.forEach((s) => s.chart && s.chart.resize());
+    // Debounced: a window drag fires resize continuously, and resizing every
+    // chart on every event is a repaint storm that grows with panel count.
+    let resizeTimerId = null;
+    const resizeHandler = () => {
+        clearTimeout(resizeTimerId);
+        resizeTimerId = setTimeout(() => states.forEach((s) => s.chart && s.chart.resize()), 150);
+    };
     window.addEventListener('resize', resizeHandler);
+
+    const visibilityHandler = () => {
+        if (!document.hidden) {
+            for (const state of states) refresh(dashboard.id, state);
+        }
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
 
     // Chart colors are baked into canvas draw calls at setOption() time, not
     // live CSS custom properties like the rest of the UI — a day/night theme
@@ -237,7 +253,9 @@ function mount(gridEl, dashboard, { fillHeight = false } = {}) {
     return {
         destroy() {
             clearInterval(clockTimerId);
+            clearTimeout(resizeTimerId);
             window.removeEventListener('resize', resizeHandler);
+            document.removeEventListener('visibilitychange', visibilityHandler);
             window.removeEventListener('panopticon:theme-changed', themeChangeHandler);
             document.body.style.removeProperty('--dashboard-accent');
             for (const state of states) {

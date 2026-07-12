@@ -9,6 +9,7 @@ const gridEl = document.getElementById('panel-grid');
 const clockEl = document.getElementById('clock');
 
 let controller = null;
+let currentId = null;
 
 setInterval(() => { clockEl.textContent = new Date().toLocaleTimeString(); }, 1000);
 clockEl.textContent = new Date().toLocaleTimeString();
@@ -24,8 +25,18 @@ function setDashboardParam(id) {
 }
 
 async function loadDashboard(id) {
+    // Fetch BEFORE tearing anything down: if the fetch fails the current
+    // dashboard keeps running instead of leaving an empty grid behind.
+    let dashboard;
+    try {
+        dashboard = await Api.getDashboard(id);
+    } catch (err) {
+        if (currentId) selectEl.value = currentId;
+        descEl.textContent = `Failed to load dashboard "${id}": ${(err && err.message) || err}`;
+        return;
+    }
     if (controller) controller.destroy();
-    const dashboard = await Api.getDashboard(id);
+    currentId = id;
     selectEl.value = id;
     setDashboardParam(id);
     titleEl.textContent = dashboard.title;
@@ -41,7 +52,12 @@ async function init() {
             descEl.textContent = 'Add a dashboard JSON file under config/dashboards.';
             return;
         }
-        selectEl.innerHTML = dashboards.map((d) => `<option value="${d.id}">${d.title}</option>`).join('');
+        for (const d of dashboards) {
+            const option = document.createElement('option');
+            option.value = d.id;
+            option.textContent = d.title;
+            selectEl.appendChild(option);
+        }
         selectEl.addEventListener('change', () => loadDashboard(selectEl.value));
 
         const initialId = paramDashboardId() && dashboards.some((d) => d.id === paramDashboardId())

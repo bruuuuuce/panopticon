@@ -58,7 +58,17 @@ async function showCurrent() {
         if (controller) controller.destroy();
         controller = Dashboard.mount(gridEl, dashboard, { fillHeight: true });
     } catch (err) {
-        gridEl.innerHTML = `<div class="panel-error" style="padding:20px">${(err && err.message) || 'Failed to load dashboard'}</div>`;
+        // The grid is being replaced by the error box, so the previous
+        // dashboard's timers and chart instances must be torn down here too,
+        // or every failed rotation step would leak them against detached DOM.
+        if (controller) {
+            controller.destroy();
+            controller = null;
+        }
+        const box = document.createElement('div');
+        box.className = 'panel-error monitor-load-error';
+        box.textContent = (err && err.message) || 'Failed to load dashboard';
+        gridEl.replaceChildren(box);
     }
 }
 
@@ -76,6 +86,9 @@ function updateCountdown() {
 function startTicking() {
     if (tickTimer) clearInterval(tickTimer);
     tickTimer = setInterval(() => {
+        // Nobody is watching a hidden tab: freeze rotation instead of cycling
+        // (and fetching) dashboards in the background for hours.
+        if (document.hidden) return;
         updateCountdown();
         if (paused || dashboards.length <= 1) return;
         elapsedMs += TICK_MS;

@@ -51,6 +51,13 @@ class SqlGuardProductionLikeScenariosTest {
             // a real production query filtering on free-text user input would otherwise be unusable.
             "SELECT * FROM tickets WHERE subject = 'please update my address, then delete the old one'",
             "SELECT * FROM tickets -- trailing comment mentioning delete/update, not code\n",
+            // Identifiers merely CONTAINING a forbidden keyword next to an underscore are
+            // everyday reporting columns and must not trip the guard (create_date, update_time...).
+            "SELECT create_date, update_time FROM tickets",
+            "SELECT id FROM users WHERE delete_flag = 0",
+            "SELECT commit_hash, merge_id FROM event_outbox",
+            "SELECT last_update, updated_by FROM tickets",
+            "SELECT t.exec_count FROM tickets t",
     })
     void allowsGenuineReadOnlyStatements(String sql) {
         SqlGuard.assertReadOnly(sql); // must not throw

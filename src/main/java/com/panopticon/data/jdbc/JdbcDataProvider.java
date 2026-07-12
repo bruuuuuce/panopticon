@@ -9,6 +9,7 @@ import com.panopticon.model.DataSourceDefinition;
 import com.panopticon.registry.DataSourceRegistry;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -63,6 +64,20 @@ public class JdbcDataProvider implements DataProvider {
                     datasource.name(), SqlDialect.fromConfig(datasource.dialect()), datasource.readOnly());
         }
         this.pools = Map.copyOf(built);
+    }
+
+    /**
+     * The pools are built by this class, not registered as Spring beans, so
+     * Spring won't close them on context shutdown by itself — without this,
+     * every context restart (tests, devtools) leaks pool threads/connections.
+     */
+    @PreDestroy
+    void closePools() {
+        for (DataSource pool : pools.values()) {
+            if (pool instanceof HikariDataSource hikari) {
+                hikari.close();
+            }
+        }
     }
 
     @Override

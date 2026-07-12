@@ -42,7 +42,7 @@ public class DataResultCache {
     private record Success(DataResult result) implements Outcome {
     }
 
-    private record Failure(String message) implements Outcome {
+    private record Failure(RuntimeException exception) implements Outcome {
     }
 
     private record Entry(Outcome outcome, Instant expiresAt) {
@@ -85,7 +85,7 @@ public class DataResultCache {
             entries.put(dataId, new Entry(new Success(fresh), expiresAt));
             return fresh;
         } catch (RuntimeException e) {
-            entries.put(dataId, new Entry(new Failure(e.getMessage()), expiresAt));
+            entries.put(dataId, new Entry(new Failure(e), expiresAt));
             throw e;
         }
     }
@@ -94,6 +94,11 @@ public class DataResultCache {
         if (outcome instanceof Success success) {
             return success.result();
         }
-        throw new DataExecutionException(((Failure) outcome).message());
+        // Chain the original as cause: a replayed failure must not degrade to a
+        // message-only exception (which could even be null) with no stack trace
+        // pointing at what actually broke.
+        RuntimeException original = ((Failure) outcome).exception();
+        String message = original.getMessage() != null ? original.getMessage() : original.getClass().getSimpleName();
+        throw new DataExecutionException(message, original);
     }
 }
