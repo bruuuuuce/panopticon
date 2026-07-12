@@ -2,6 +2,7 @@
   "id": "db-overview",
   "title": "Database Overview",
   "description": "What's in the datasource itself: tables, row counts and schema, read straight from information_schema.",
+  "accentColor": "#3987e5",
   "gridColumns": 12,
   "rotation": { "durationSeconds": 20, "enabled": true },
   "panels": [

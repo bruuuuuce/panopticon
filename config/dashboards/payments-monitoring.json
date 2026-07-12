@@ -2,6 +2,7 @@
   "id": "payments-monitoring",
   "title": "Payments Monitoring",
   "description": "Live payment volume, success rate and recent transactions.",
+  "accentColor": "#199e70",
   "gridColumns": 12,
   "rotation": { "durationSeconds": 20, "enabled": true },
   "panels": [

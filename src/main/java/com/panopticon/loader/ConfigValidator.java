@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Cross-checks parsed dashboards/data definitions: unique ids, panels
@@ -28,6 +29,8 @@ import java.util.Set;
  * {@code /api/config/validate} dry-run endpoint.
  */
 public final class ConfigValidator {
+
+    private static final Pattern HEX_COLOR = Pattern.compile("^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$");
 
     private ConfigValidator() {
     }
@@ -65,6 +68,10 @@ public final class ConfigValidator {
             }
             if (dashboard.panels().isEmpty()) {
                 errors.add(new ValidationError("dashboard:" + dashboard.id(), "Dashboard has no panels"));
+            }
+            if (dashboard.accentColor() != null && !HEX_COLOR.matcher(dashboard.accentColor()).matches()) {
+                errors.add(new ValidationError("dashboard:" + dashboard.id(),
+                        "'accentColor' must be a hex color like #3987e5, got '%s'".formatted(dashboard.accentColor())));
             }
 
             Set<String> panelIds = new HashSet<>();

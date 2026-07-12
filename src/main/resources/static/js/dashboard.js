@@ -179,9 +179,18 @@ async function refresh(dashboardId, state) {
  * `grid-auto-rows`, so a dashboard fills a wall monitor edge-to-edge with no
  * dead space and no scrolling, whatever its row count.
  */
+function applyAccentColor(dashboard) {
+    if (dashboard.accentColor) {
+        document.body.style.setProperty('--dashboard-accent', dashboard.accentColor);
+    } else {
+        document.body.style.removeProperty('--dashboard-accent');
+    }
+}
+
 function mount(gridEl, dashboard, { fillHeight = false } = {}) {
     gridEl.innerHTML = '';
     gridEl.style.gridTemplateColumns = `repeat(${dashboard.gridColumns}, 1fr)`;
+    applyAccentColor(dashboard);
     if (fillHeight) {
         const rowCount = Math.max(1, ...dashboard.panels.map((p) => p.grid.row + p.grid.rowSpan - 1));
         gridEl.style.gridAutoRows = 'unset';
@@ -230,6 +239,7 @@ function mount(gridEl, dashboard, { fillHeight = false } = {}) {
             clearInterval(clockTimerId);
             window.removeEventListener('resize', resizeHandler);
             window.removeEventListener('panopticon:theme-changed', themeChangeHandler);
+            document.body.style.removeProperty('--dashboard-accent');
             for (const state of states) {
                 if (state.timerId) clearInterval(state.timerId);
                 if (state.chart) state.chart.dispose();

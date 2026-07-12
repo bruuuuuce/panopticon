@@ -75,7 +75,20 @@ html, body {
 
 body {
     margin: 0;
-    background: var(--page-bg);
+    /* --dashboard-accent is set/cleared per dashboard by dashboard.js (from that
+       dashboard's optional accentColor) - a bottom-to-top color wash behind the
+       grid so dashboards for different environments/systems read apart at a
+       glance, especially useful cycling through several in monitor mode. Falls
+       back to fully transparent (i.e. just --page-bg) when unset, so dashboards
+       without an accentColor look exactly as before. Panel surfaces are never
+       part of this - only the chrome/gaps behind them - so it can't touch the
+       validated palette's contrast guarantees. */
+    background:
+        linear-gradient(to top,
+            color-mix(in srgb, var(--dashboard-accent, transparent) 45%, transparent) 0%,
+            transparent 65%),
+        var(--page-bg);
+    background-attachment: fixed;
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-size: 14px;
