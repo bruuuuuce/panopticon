@@ -10,6 +10,14 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 
+# Liveness/readiness for orchestrators plus Micrometer metrics
+# (panopticon.data.execution timer, panopticon.cache counters).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+
 panopticon:
   config:
     dashboards-path: config/dashboards

@@ -8,6 +8,14 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 
+# Same actuator surface as production application.yml, so the IT suite can
+# smoke-test health and the panopticon.* metrics.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+
 # Fully self-contained config for the com.panopticon.it production-like integration
 # suite. Loaded via spring.config.location so it replaces (not merges with) the
 # app's normal application.yml - the demo-h2/local-sqlite/demo-jira datasources

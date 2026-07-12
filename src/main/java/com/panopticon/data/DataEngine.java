@@ -6,7 +6,11 @@ import com.panopticon.model.DataResultStatus;
 import com.panopticon.model.DataSourceDefinition;
 import com.panopticon.registry.DataRegistry;
 import com.panopticon.registry.DataSourceRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 /**
  * Owns the full lifecycle of resolving and running a data definition by id:
@@ -29,16 +33,19 @@ public class DataEngine {
     private final DataSourceRegistry dataSourceRegistry;
     private final DataProviderRegistry providerRegistry;
     private final DataResultCache resultCache;
+    private final MeterRegistry meterRegistry;
 
     public DataEngine(
             DataRegistry dataRegistry,
             DataSourceRegistry dataSourceRegistry,
             DataProviderRegistry providerRegistry,
-            DataResultCache resultCache) {
+            DataResultCache resultCache,
+            MeterRegistry meterRegistry) {
         this.dataRegistry = dataRegistry;
         this.dataSourceRegistry = dataSourceRegistry;
         this.providerRegistry = providerRegistry;
         this.resultCache = resultCache;
+        this.meterRegistry = meterRegistry;
     }
 
     public DataResult execute(String dataId) {
@@ -50,13 +57,31 @@ public class DataEngine {
         DataExecutionContext context = new DataExecutionContext(definition, datasource);
 
         return resultCache.getOrCompute(definition.id(), definition.cacheTtlSeconds(), () -> {
-            DataResult result = provider.execute(context);
-            if (result.status() == DataResultStatus.ERROR) {
-                // Bridges the provider SPI's "return a result, even on failure" contract back into
-                // the exception-based flow the cache/controller/runtime-tracker already rely on.
-                throw new DataExecutionException(result.errorMessage());
+            // Timed here, inside the cache supplier, so the metric only counts real
+            // provider executions — cache hits are counted by DataResultCache instead.
+            long start = System.nanoTime();
+            try {
+                DataResult result = provider.execute(context);
+                if (result.status() == DataResultStatus.ERROR) {
+                    // Bridges the provider SPI's "return a result, even on failure" contract back into
+                    // the exception-based flow the cache/controller/runtime-tracker already rely on.
+                    throw new DataExecutionException(result.errorMessage());
+                }
+                recordExecution(definition.id(), "ok", start);
+                return result;
+            } catch (RuntimeException e) {
+                recordExecution(definition.id(), "error", start);
+                throw e;
             }
-            return result;
         });
+    }
+
+    private void recordExecution(String dataId, String outcome, long startNanos) {
+        Timer.builder("panopticon.data.execution")
+                .description("Provider executions of a data definition (cache misses only)")
+                .tag("dataId", dataId)
+                .tag("outcome", outcome)
+                .register(meterRegistry)
+                .record(Duration.ofNanos(System.nanoTime() - startNanos));
     }
 }

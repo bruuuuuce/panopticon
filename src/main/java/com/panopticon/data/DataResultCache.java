@@ -1,6 +1,8 @@
 package com.panopticon.data;
 
 import com.panopticon.model.DataResult;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -53,15 +55,21 @@ public class DataResultCache {
 
     private final Map<String, Entry> entries = new ConcurrentHashMap<>();
     private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>();
+    private final MeterRegistry meterRegistry;
+
+    public DataResultCache(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
 
     public DataResult getOrCompute(String dataId, int ttlSeconds, Supplier<DataResult> loader) {
         if (ttlSeconds <= 0) {
+            count("bypass");
             return loader.get();
         }
 
         Entry cached = entries.get(dataId);
         if (cached != null && cached.isFresh()) {
-            return resolve(cached.outcome());
+            return resolveCounted(cached.outcome());
         }
 
         ReentrantLock lock = locks.computeIfAbsent(dataId, id -> new ReentrantLock());
@@ -70,8 +78,9 @@ public class DataResultCache {
             // Another thread may have refreshed this entry while we were waiting for the lock.
             cached = entries.get(dataId);
             if (cached != null && cached.isFresh()) {
-                return resolve(cached.outcome());
+                return resolveCounted(cached.outcome());
             }
+            count("miss");
             return computeAndCache(dataId, ttlSeconds, loader);
         } finally {
             lock.unlock();
@@ -90,7 +99,8 @@ public class DataResultCache {
         }
     }
 
-    private DataResult resolve(Outcome outcome) {
+    private DataResult resolveCounted(Outcome outcome) {
+        count(outcome instanceof Success ? "hit" : "negative-hit");
         if (outcome instanceof Success success) {
             return success.result();
         }
@@ -100,5 +110,13 @@ public class DataResultCache {
         RuntimeException original = ((Failure) outcome).exception();
         String message = original.getMessage() != null ? original.getMessage() : original.getClass().getSimpleName();
         throw new DataExecutionException(message, original);
+    }
+
+    private void count(String result) {
+        Counter.builder("panopticon.cache")
+                .description("Result cache lookups by outcome (hit/negative-hit/miss/bypass)")
+                .tag("result", result)
+                .register(meterRegistry)
+                .increment();
     }
 }

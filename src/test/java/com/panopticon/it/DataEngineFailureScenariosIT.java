@@ -11,6 +11,7 @@ import com.panopticon.model.DataDefinition;
 import com.panopticon.model.DataResult;
 import com.panopticon.registry.DataRegistry;
 import com.panopticon.registry.DataSourceRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -156,7 +157,8 @@ class DataEngineFailureScenariosIT extends AbstractProductionLikeIT {
         // for: proving DataEngine itself still refuses to silently misroute the request.
         DataDefinition bogus = new DataDefinition("bogus-provider-def", "x", "totally-unsupported-provider",
                 "prod-like-sqlite", null, null, 0, "SELECT 1", null, null, null, null);
-        DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry, new DataResultCache());
+        DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry,
+                new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry());
 
         assertThatThrownBy(() -> standalone.execute("bogus-provider-def"))
                 .isInstanceOf(UnsupportedProviderException.class);
@@ -166,7 +168,8 @@ class DataEngineFailureScenariosIT extends AbstractProductionLikeIT {
     void dataDefinitionWithUnknownDatasource_throwsNoSuchDataSourceException() {
         DataDefinition bogus = new DataDefinition("bogus-datasource-def", "x", "jdbc",
                 "totally-unknown-datasource", null, null, 0, "SELECT 1", null, null, null, null);
-        DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry, new DataResultCache());
+        DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry,
+                new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry());
 
         assertThatThrownBy(() -> standalone.execute("bogus-datasource-def"))
                 .isInstanceOf(DataSourceRegistry.NoSuchDataSourceException.class);
