@@ -22,6 +22,14 @@ panopticon:
   config:
     dashboards-path: config/dashboards
     data-path: config/data
+  # Off by default. When enabled, every fresh data execution is appended as a
+  # JSON line to <directory>/panopticon-YYYY-MM-DD.jsonl (see DataRecorder) —
+  # reusable data, importable into a DB table via --import-recording (see
+  # RecordingImportRunner and db/recording/recording_table_v1.sql). Shortcut:
+  # starting with --recording=<dir> enables it and sets the directory at once.
+  recording:
+    enabled: false
+    directory: recordings
   datasources:
     # H2, in-memory: the default demo/mock datasource. readOnly is false here
     # (not because queries against it are writable — the SQL guard still

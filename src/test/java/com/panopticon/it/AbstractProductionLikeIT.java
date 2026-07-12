@@ -48,6 +48,12 @@ import static org.awaitility.Awaitility.await;
 public abstract class AbstractProductionLikeIT {
 
     private static final Path dbFile = createTempDbFile();
+    /**
+     * Recording is enabled for the whole shared context (see RecordingRoundTripIT
+     * for the round-trip assertions) - a static-final path, like dbFile, so every
+     * subclass registers the identical value and the context stays cacheable.
+     */
+    protected static final Path recordingDir = createTempRecordingDir();
     private static final Object INIT_LOCK = new Object();
 
     protected static volatile ProductionTrafficSimulator simulator;
@@ -63,9 +69,19 @@ public abstract class AbstractProductionLikeIT {
         }
     }
 
+    private static Path createTempRecordingDir() {
+        try {
+            return Files.createTempDirectory("panopticon-it-recordings-");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     @DynamicPropertySource
     static void datasourceProperties(DynamicPropertyRegistry registry) {
         registry.add("panopticon.datasources.prod-like-sqlite.jdbc-url", AbstractProductionLikeIT::jdbcUrl);
+        registry.add("panopticon.recording.enabled", () -> "true");
+        registry.add("panopticon.recording.directory", () -> recordingDir.toString());
     }
 
     @BeforeEach

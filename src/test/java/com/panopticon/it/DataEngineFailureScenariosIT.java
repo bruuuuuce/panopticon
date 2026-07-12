@@ -1,10 +1,13 @@
 package com.panopticon.it;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.panopticon.api.dto.ApiError;
+import com.panopticon.config.RecordingSettings;
 import com.panopticon.data.DataEngine;
 import com.panopticon.data.DataExecutionException;
 import com.panopticon.data.DataProviderRegistry;
 import com.panopticon.data.DataResultCache;
+import com.panopticon.data.recording.DataRecorder;
 import com.panopticon.data.UnknownDataException;
 import com.panopticon.data.UnsupportedProviderException;
 import com.panopticon.model.DataDefinition;
@@ -158,7 +161,8 @@ class DataEngineFailureScenariosIT extends AbstractProductionLikeIT {
         DataDefinition bogus = new DataDefinition("bogus-provider-def", "x", "totally-unsupported-provider",
                 "prod-like-sqlite", null, null, 0, "SELECT 1", null, null, null, null);
         DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry,
-                new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry());
+                new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry(),
+                new DataRecorder(RecordingSettings.disabled(), new ObjectMapper()));
 
         assertThatThrownBy(() -> standalone.execute("bogus-provider-def"))
                 .isInstanceOf(UnsupportedProviderException.class);
@@ -169,7 +173,8 @@ class DataEngineFailureScenariosIT extends AbstractProductionLikeIT {
         DataDefinition bogus = new DataDefinition("bogus-datasource-def", "x", "jdbc",
                 "totally-unknown-datasource", null, null, 0, "SELECT 1", null, null, null, null);
         DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry,
-                new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry());
+                new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry(),
+                new DataRecorder(RecordingSettings.disabled(), new ObjectMapper()));
 
         assertThatThrownBy(() -> standalone.execute("bogus-datasource-def"))
                 .isInstanceOf(DataSourceRegistry.NoSuchDataSourceException.class);

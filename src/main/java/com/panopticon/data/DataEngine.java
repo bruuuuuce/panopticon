@@ -4,6 +4,8 @@ import com.panopticon.model.DataDefinition;
 import com.panopticon.model.DataResult;
 import com.panopticon.model.DataResultStatus;
 import com.panopticon.model.DataSourceDefinition;
+import com.panopticon.data.recording.DataRecorder;
+import com.panopticon.data.recording.RecordedExecution;
 import com.panopticon.registry.DataRegistry;
 import com.panopticon.registry.DataSourceRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,18 +36,21 @@ public class DataEngine {
     private final DataProviderRegistry providerRegistry;
     private final DataResultCache resultCache;
     private final MeterRegistry meterRegistry;
+    private final DataRecorder recorder;
 
     public DataEngine(
             DataRegistry dataRegistry,
             DataSourceRegistry dataSourceRegistry,
             DataProviderRegistry providerRegistry,
             DataResultCache resultCache,
-            MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry,
+            DataRecorder recorder) {
         this.dataRegistry = dataRegistry;
         this.dataSourceRegistry = dataSourceRegistry;
         this.providerRegistry = providerRegistry;
         this.resultCache = resultCache;
         this.meterRegistry = meterRegistry;
+        this.recorder = recorder;
     }
 
     public DataResult execute(String dataId) {
@@ -68,9 +73,12 @@ public class DataEngine {
                     throw new DataExecutionException(result.errorMessage());
                 }
                 recordExecution(definition.id(), "ok", start);
+                recorder.record(RecordedExecution.success(definition.id(), datasource, result));
                 return result;
             } catch (RuntimeException e) {
                 recordExecution(definition.id(), "error", start);
+                recorder.record(RecordedExecution.failure(
+                        definition.id(), datasource, (System.nanoTime() - start) / 1_000_000, e.getMessage()));
                 throw e;
             }
         });
