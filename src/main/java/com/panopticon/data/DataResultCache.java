@@ -112,6 +112,11 @@ public class DataResultCache {
         throw new DataExecutionException(message, original);
     }
 
+    /** Drops every cached entry. Used by config hot-reload: definitions may have changed under the same ids. */
+    public void clear() {
+        entries.clear();
+    }
+
     private void count(String result) {
         Counter.builder("panopticon.cache")
                 .description("Result cache lookups by outcome (hit/negative-hit/miss/bypass)")

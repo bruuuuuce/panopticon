@@ -166,6 +166,24 @@ a {
     border-color: var(--text-secondary);
 }
 
+/* Same visual language as .nav-link; inside .monitor-controls the shared
+   button rule already applies, so this only needs to cover the app header. */
+.app-header .theme-toggle {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.app-header .theme-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
 .dashboard-meta {
     padding: 14px 20px 0;
 }

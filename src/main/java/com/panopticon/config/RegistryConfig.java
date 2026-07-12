@@ -16,11 +16,12 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * Loads dashboards/data definitions from disk once at startup and fails
+ * Loads dashboards/data definitions from disk at startup and fails
  * fast if the configuration is invalid, so a broken config/ directory never
- * results in a half-working app. For editing feedback without a restart,
- * see {@code POST /api/config/validate}, which re-runs the same
- * loader/validator as a dry run against the live registries.
+ * results in a half-working app. Without a restart: {@code POST
+ * /api/config/validate} re-runs the same loader/validator as a dry run, and
+ * {@code POST /api/config/reload} swaps the registries' snapshots if (and
+ * only if) the on-disk config validates cleanly.
  */
 @Configuration
 public class RegistryConfig {
