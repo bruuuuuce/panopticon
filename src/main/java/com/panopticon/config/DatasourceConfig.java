@@ -49,6 +49,7 @@ public class DatasourceConfig {
         DatasourceDefinitionProperties.JiraAuthProperties auth = props.getAuth();
         return new DataSourceDefinition(
                 name,
+                props.getDisplayName(),
                 props.getProvider(),
                 props.getJdbcUrl(),
                 props.getUsername(),

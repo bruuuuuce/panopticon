@@ -63,7 +63,7 @@ class ConfigValidatorPolicyValidationTest {
     private DashboardDefinition dashboard(RefreshPolicy refresh, RotationPolicy rotation) {
         PanelDefinition panel = new PanelDefinition(
                 "p1", "Panel", PanelType.TABLE, "d1",
-                new GridPosition(1, 1, 1, 12), refresh, Map.of());
+                new GridPosition(1, 1, 1, 12), refresh, Map.of(), List.of());
         return new DashboardDefinition("dash1", "Dash", "desc", 12, List.of(panel), rotation, null);
     }
 
@@ -72,7 +72,7 @@ class ConfigValidatorPolicyValidationTest {
                 "d1", "Data", JdbcDataProvider.PROVIDER_TYPE, "ds1", null, null, null,
                 "SELECT 1", null, null, null, null);
         DataSourceRegistry datasources = new DataSourceRegistry(Map.of("ds1",
-                new com.panopticon.model.DataSourceDefinition("ds1", "jdbc", "jdbc:h2:mem:x", "sa", "", "org.h2.Driver",
+                new com.panopticon.model.DataSourceDefinition("ds1", null, "jdbc", "jdbc:h2:mem:x", "sa", "", "org.h2.Driver",
                         "h2", true, 1, null, null, null, null, null)));
         DataProviderRegistry providers = new DataProviderRegistry(List.of(new StubJdbcProvider()));
         return ConfigValidator.validate(List.of(data), List.of(dashboard), datasources, providers);

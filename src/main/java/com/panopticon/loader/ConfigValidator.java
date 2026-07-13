@@ -10,6 +10,8 @@ import com.panopticon.model.DataDefinition;
 import com.panopticon.model.GridPosition;
 import com.panopticon.model.PanelDefinition;
 import com.panopticon.model.PanelType;
+import com.panopticon.model.ThresholdDirection;
+import com.panopticon.model.ThresholdRule;
 import com.panopticon.registry.DataSourceRegistry;
 
 import java.util.ArrayList;
@@ -106,6 +108,7 @@ public final class ConfigValidator {
                             "'refresh.intervalSeconds' must be > 0 when refresh is enabled, got %d".formatted(
                                     panel.refresh().intervalSeconds())));
                 }
+                validateThresholds(panelSource, panel.thresholds(), errors);
             }
         }
 
@@ -182,6 +185,37 @@ public final class ConfigValidator {
             if (value == null || (value instanceof String s && s.isBlank())) {
                 errors.add(new ValidationError(panelSource,
                         "Panel type '%s' requires options.%s".formatted(type.toJson(), key)));
+            }
+        }
+    }
+
+    /**
+     * {@code field} isn't checked against the data definition's actual output
+     * columns here - like {@code xField}/{@code yField}/{@code columns}
+     * above, that shape is only known once the query actually runs, not at
+     * config-load time.
+     */
+    private static void validateThresholds(String panelSource, List<ThresholdRule> thresholds, List<ValidationError> errors) {
+        for (ThresholdRule rule : thresholds) {
+            if (rule.field() == null || rule.field().isBlank()) {
+                errors.add(new ValidationError(panelSource, "A threshold is missing 'field'"));
+                continue;
+            }
+            String ruleSource = panelSource + " threshold:" + rule.field();
+            if (rule.warning() == null && rule.critical() == null) {
+                errors.add(new ValidationError(ruleSource,
+                        "Threshold on '%s' must set at least one of 'warning'/'critical'".formatted(rule.field())));
+                continue;
+            }
+            if (rule.warning() != null && rule.critical() != null) {
+                boolean ordered = rule.direction() == ThresholdDirection.BELOW
+                        ? rule.warning() >= rule.critical()
+                        : rule.warning() <= rule.critical();
+                if (!ordered) {
+                    errors.add(new ValidationError(ruleSource,
+                            "Threshold on '%s': 'warning' (%s) and 'critical' (%s) are out of order for direction '%s'".formatted(
+                                    rule.field(), rule.warning(), rule.critical(), rule.direction().toJson())));
+                }
             }
         }
     }

@@ -41,16 +41,17 @@ class ConfigHotReloadIT {
         registry.add("dashboards", dashboardsDir::toString);
         // --data left at its default (config/data), same as production.
 
-        // This context and DashboardStartupLocationOverrideIT both boot the real
-        // application.yml datasources in the same JVM. Their named in-memory
-        // databases (h2:mem:panopticon, sqlite shared-cache) would otherwise be
-        // SHARED between the two cached contexts, and the second context's
-        // seed scripts would collide with the first's rows - so this context
-        // gets its own database names.
+        // This context and DashboardStartupLocationOverrideIT/DatasourceIdentificationIT
+        // all boot the real application.yml datasources in the same JVM. Their named
+        // in-memory databases (h2:mem:panopticon, sqlite shared-cache) would otherwise
+        // be SHARED between the cached contexts, and the seed scripts would collide
+        // with each other's rows - so every such context gets its own database names.
         registry.add("panopticon.datasources.demo-h2.jdbc-url",
                 () -> "jdbc:h2:mem:panopticon-reload-it;DB_CLOSE_DELAY=-1");
         registry.add("panopticon.datasources.local-sqlite.jdbc-url",
                 () -> "jdbc:sqlite:file:reload-it?mode=memory&cache=shared");
+        registry.add("panopticon.datasources.secondary-sqlite.jdbc-url",
+                () -> "jdbc:sqlite:file:reload-it-secondary?mode=memory&cache=shared");
     }
 
     private static Path createMutableDashboardsDir() {

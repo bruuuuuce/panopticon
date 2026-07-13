@@ -10,6 +10,8 @@ package com.panopticon.config;
 public class DatasourceDefinitionProperties {
 
     private String provider = "jdbc";
+    /** Human-facing label for this connection; falls back to the config key (see DataSourceDefinition) when unset. */
+    private String displayName;
 
     // JDBC
     private String driverClassName;
@@ -34,6 +36,14 @@ public class DatasourceDefinitionProperties {
 
     public void setProvider(String provider) {
         this.provider = provider;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 
     public String getDriverClassName() {

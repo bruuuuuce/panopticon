@@ -54,7 +54,7 @@ class DashboardAccentColorValidationTest {
     private DashboardDefinition dashboardWithAccent(String accentColor) {
         PanelDefinition panel = new PanelDefinition(
                 "p1", "Panel", PanelType.TABLE, "d1",
-                new GridPosition(1, 1, 1, 12), new RefreshPolicy(30, true), Map.of());
+                new GridPosition(1, 1, 1, 12), new RefreshPolicy(30, true), Map.of(), List.of());
         return new DashboardDefinition("dash1", "Dash", "desc", 12, List.of(panel), null, accentColor);
     }
 
@@ -66,7 +66,7 @@ class DashboardAccentColorValidationTest {
         // for this test - only accentColor validation is under test here - so a real check against
         // an empty registry would ALSO fail; use a registry that actually contains 'ds1'/'jdbc'.
         DataSourceRegistry datasources = new DataSourceRegistry(Map.of("ds1",
-                new com.panopticon.model.DataSourceDefinition("ds1", "jdbc", "jdbc:h2:mem:x", "sa", "", "org.h2.Driver",
+                new com.panopticon.model.DataSourceDefinition("ds1", null, "jdbc", "jdbc:h2:mem:x", "sa", "", "org.h2.Driver",
                         "h2", true, 1, null, null, null, null, null)));
         DataProviderRegistry providers = new DataProviderRegistry(List.of(new StubJdbcProvider()));
         return ConfigValidator.validate(List.of(data), List.of(dashboard), datasources, providers);

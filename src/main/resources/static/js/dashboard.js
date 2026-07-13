@@ -6,36 +6,8 @@
  */
 import { Api } from './api.js';
 import { Charts } from './charts.js';
-
-function humanize(fieldName) {
-    return fieldName.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function escapeHtml(value) {
-    const div = document.createElement('div');
-    div.textContent = value === null || value === undefined ? '' : String(value);
-    return div.innerHTML;
-}
-
-function formatCell(value) {
-    if (value === null || value === undefined) return '<span style="opacity:.4">—</span>';
-    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
-        const d = new Date(value);
-        if (!isNaN(d.getTime())) return escapeHtml(d.toLocaleString());
-    }
-    return escapeHtml(value);
-}
-
-function formatRelativeTime(date) {
-    if (!date) return '—';
-    const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
-    if (seconds < 5) return 'just now';
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.round(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.round(minutes / 60);
-    return `${hours}h ago`;
-}
+import { humanize, escapeHtml, formatCell, formatRelativeTime } from './format.js';
+import { evaluateThresholds, worstLevel } from './thresholds.js';
 
 /** e.g. 30 -> "30s", 90 -> "1m30s", 120 -> "2m" */
 function formatInterval(seconds) {
@@ -81,7 +53,10 @@ function buildPanelCard(panel) {
 
     el.append(header, body);
 
-    return { panel, el, dot, time, body, chart: null, timerId: null, lastRefreshAt: null, lastResult: null, refreshing: false };
+    return {
+        panel, el, dot, time, body, chart: null, timerId: null,
+        lastRefreshAt: null, lastResult: null, refreshing: false, datasourceName: null, breaches: [],
+    };
 }
 
 function renderKpi(state, result) {
@@ -93,9 +68,11 @@ function renderKpi(state, result) {
         const num = Number(raw);
         displayValue = opts.format === 'decimal' ? num.toFixed(1) : Math.round(num).toLocaleString();
     }
+    const level = worstLevel(state.breaches);
+    const levelClass = level ? ` level-${level}` : '';
     state.body.innerHTML = `
         <div class="kpi-body">
-            <div><span class="kpi-value">${escapeHtml(displayValue)}</span>${opts.unit ? `<span class="kpi-unit">${escapeHtml(opts.unit)}</span>` : ''}</div>
+            <div><span class="kpi-value${levelClass}">${escapeHtml(displayValue)}</span>${opts.unit ? `<span class="kpi-unit">${escapeHtml(opts.unit)}</span>` : ''}</div>
             <div class="kpi-label">${escapeHtml(state.panel.title)}</div>
         </div>`;
 }
@@ -107,9 +84,18 @@ function renderTable(state, result) {
         state.body.innerHTML = '<div class="panel-empty">No data</div>';
         return;
     }
+    // rowIndex+field -> level, so a cell whose column is under threshold gets a
+    // highlight class even though the breach list itself is column-agnostic.
+    const cellLevels = new Map();
+    for (const b of state.breaches) cellLevels.set(`${b.rowIndex}:${b.field}`, b.level);
+
     const thead = `<thead><tr>${columns.map((c) => `<th>${escapeHtml(humanize(c))}</th>`).join('')}</tr></thead>`;
-    const tbody = `<tbody>${result.rows.map((row) =>
-        `<tr>${columns.map((c) => `<td>${formatCell(row[c])}</td>`).join('')}</tr>`
+    const tbody = `<tbody>${result.rows.map((row, rowIndex) =>
+        `<tr>${columns.map((c) => {
+            const level = cellLevels.get(`${rowIndex}:${c}`);
+            const cellClass = level ? ` class="cell-threshold-${level}"` : '';
+            return `<td${cellClass}>${formatCell(row[c])}</td>`;
+        }).join('')}</tr>`
     ).join('')}</tbody>`;
     state.body.innerHTML = `<div class="panel-table-wrap"><table class="panel-table">${thead}${tbody}</table></div>`;
 }
@@ -148,7 +134,13 @@ function render(state, result) {
     }
 }
 
-async function refresh(dashboardId, state) {
+function dotClassForLevel(level) {
+    if (level === 'critical') return 'status-dot status-breach';
+    if (level === 'warning') return 'status-dot status-warn';
+    return 'status-dot status-ok';
+}
+
+async function refresh(dashboardId, state, onAlertsChanged) {
     // A slow query (near its timeout) could still be in flight when the next
     // interval tick fires; skip that tick rather than let two fetches for the
     // same panel race and render out of order.
@@ -161,11 +153,18 @@ async function refresh(dashboardId, state) {
         const result = await Api.getPanelData(dashboardId, state.panel.id);
         state.lastRefreshAt = new Date();
         state.lastResult = result;
-        state.dot.className = 'status-dot status-ok';
+        state.datasourceName = result.datasourceName || null;
+        state.breaches = evaluateThresholds(state.panel, result);
+        const level = worstLevel(state.breaches);
+        state.dot.className = dotClassForLevel(level);
+        state.dot.title = level ? `${state.breaches.length} threshold breach(es), worst: ${level}` : '';
         render(state, result);
+        if (onAlertsChanged) onAlertsChanged(state.panel.id, state.breaches, state.panel.title);
     } catch (err) {
+        state.breaches = [];
         state.dot.className = 'status-dot status-error';
         state.body.innerHTML = `<div class="panel-error">${escapeHtml((err && err.message) || 'Failed to load panel data')}</div>`;
+        if (onAlertsChanged) onAlertsChanged(state.panel.id, [], state.panel.title);
     } finally {
         state.refreshing = false;
     }
@@ -190,7 +189,7 @@ function applyAccentColor(dashboard) {
     }
 }
 
-function mount(gridEl, dashboard, { fillHeight = false } = {}) {
+function mount(gridEl, dashboard, { fillHeight = false, onAlertsChanged = null } = {}) {
     gridEl.innerHTML = '';
     gridEl.style.gridTemplateColumns = `repeat(${dashboard.gridColumns}, 1fr)`;
     applyAccentColor(dashboard);
@@ -208,15 +207,19 @@ function mount(gridEl, dashboard, { fillHeight = false } = {}) {
         gridEl.appendChild(state.el);
         states.push(state);
 
-        refresh(dashboard.id, state);
+        refresh(dashboard.id, state, onAlertsChanged);
         if (panel.refresh && panel.refresh.enabled && panel.refresh.intervalSeconds > 0) {
-            state.timerId = setInterval(() => refresh(dashboard.id, state), panel.refresh.intervalSeconds * 1000);
+            state.timerId = setInterval(() => refresh(dashboard.id, state, onAlertsChanged), panel.refresh.intervalSeconds * 1000);
         }
     }
 
     const clockTimerId = setInterval(() => {
         for (const state of states) {
-            state.time.textContent = `${refreshLabel(state.panel)} · ${formatRelativeTime(state.lastRefreshAt)}`;
+            const dsPart = state.datasourceName ? ` · ${state.datasourceName}` : '';
+            state.time.textContent = `${refreshLabel(state.panel)}${dsPart} · ${formatRelativeTime(state.lastRefreshAt)}`;
+            state.time.title = state.datasourceName
+                ? `Connection: ${state.datasourceName} · time since last refresh`
+                : 'Query refresh interval · time since last refresh';
         }
     }, 1000);
 
@@ -231,7 +234,7 @@ function mount(gridEl, dashboard, { fillHeight = false } = {}) {
 
     const visibilityHandler = () => {
         if (!document.hidden) {
-            for (const state of states) refresh(dashboard.id, state);
+            for (const state of states) refresh(dashboard.id, state, onAlertsChanged);
         }
     };
     document.addEventListener('visibilitychange', visibilityHandler);
@@ -261,6 +264,9 @@ function mount(gridEl, dashboard, { fillHeight = false } = {}) {
             for (const state of states) {
                 if (state.timerId) clearInterval(state.timerId);
                 if (state.chart) state.chart.dispose();
+                // Clear this panel's alerts so switching dashboards (or rotating in
+                // monitor mode) doesn't leave "ghost" alerts from an unmounted panel.
+                if (onAlertsChanged) onAlertsChanged(state.panel.id, [], state.panel.title);
             }
         },
     };

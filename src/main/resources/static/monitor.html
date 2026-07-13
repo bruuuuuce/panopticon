@@ -21,11 +21,16 @@
     <div class="spacer"></div>
     <div class="countdown" id="countdown"></div>
     <div class="monitor-controls">
+        <div class="alerts-widget">
+            <button id="alerts-toggle" class="alerts-toggle" type="button" aria-label="Alerts">🔔<span id="alerts-badge" class="alerts-badge" hidden>0</span></button>
+            <div id="alerts-dropdown" class="alerts-dropdown" hidden></div>
+        </div>
         <button id="btn-prev" title="Previous dashboard (&larr;)">&#8249; Prev</button>
         <button id="btn-pause" title="Pause rotation (space)">Pause</button>
         <button id="btn-next" title="Next dashboard (&rarr;)">Next &#8250;</button>
         <button id="btn-fullscreen" title="Toggle fullscreen (f)">Fullscreen</button>
         <button class="theme-toggle" type="button">Theme: auto</button>
+        <a class="nav-link" href="/query-stats.html">Query stats</a>
         <a class="nav-link" href="/index.html">Exit</a>
     </div>
 </div>

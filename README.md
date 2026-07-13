@@ -283,7 +283,7 @@ definitions under `config/data/`:
 | `payments-monitoring` | Revenue today, success rate, payments by status/method, a 14-day volume trend, recent payments | jdbc (H2) |
 | `db-overview` | The datasource's own schema — table/row counts and column inventory, read live from `information_schema` | jdbc (H2) |
 | `query-performance` | Ticket SLA view — resolution-time distribution, breaches, avg resolution by priority, slowest resolutions | jdbc (H2) |
-| `provider-showcase` | Edge-node status (SQLite) and open-issue breakdowns (mocked Jira), side by side | jdbc (SQLite) + jira |
+| `provider-showcase` | Edge-node status and warehouse inventory (two independent SQLite connections) plus open-issue breakdowns (mocked Jira), side by side | jdbc (SQLite ×2) + jira |
 
 `db-overview` is worth calling out on its own: its queries aren't against
 app tables at all, they're against H2's `information_schema` — showing the
@@ -326,6 +326,7 @@ panopticon:
   datasources:
     reporting:
       provider: jdbc
+      display-name: "Reporting Warehouse (Oracle)"
       driver-class-name: oracle.jdbc.OracleDriver
       jdbc-url: "jdbc:oracle:thin:@//host:1521/service"
       username: report_ro
@@ -335,6 +336,7 @@ panopticon:
 
     support-jira:
       provider: jira
+      display-name: "Support Jira"
       base-url: "https://jira.example.com"
       auth:
         type: bearer
@@ -345,6 +347,20 @@ See [Safety notes](#safety-notes) above before pointing a jdbc datasource at
 a real database. `support-jira` above would resolve today too — but see
 [The jira provider](#the-jira-provider): it would still be served from the
 in-memory mock, since there's no real HTTP client behind `JiraDataProvider` yet.
+
+`display-name` is optional — every datasource has a connection identity even
+without it, since it falls back to the config key above (e.g. `reporting`).
+It's the label shown wherever a panel's connection is surfaced to a viewer:
+each dashboard panel shows it in its header (next to the refresh interval),
+and the [Query stats](#query-stats-query-statshtml) page shows it per query,
+alongside the technical key. This matters once more than one datasource
+shares a dialect (e.g. two separate SQLite databases, as `local-sqlite` and
+`secondary-sqlite` demonstrate below) — the panel/query attribution comes
+from config identity, not from dialect or driver, so getting the datasource
+name right is what actually tells two same-dialect connections apart. See
+`config/dashboards/provider-showcase.json` for a dashboard pulling from all
+four bundled datasources at once (`demo-h2`, `local-sqlite`,
+`secondary-sqlite`, `demo-jira`) as a live example.
 
 ### Adding a jdbc data definition
 
@@ -472,6 +488,32 @@ rendering hints live, since each chart type only needs 2-3 fields:
 `options` keys, or a `grid` position that's out of bounds for the dashboard's
 `gridColumns`.
 
+#### Fixed alerting thresholds (optional, any panel type)
+
+A panel can declare `thresholds`: fixed bounds on any field of its data,
+evaluated by the frontend on every refresh (not stored or computed by the
+backend — see `thresholds.js`). A breach turns the panel's status dot
+warning/critical-colored, and for `stat`/`table` panels also colors the KPI
+value or highlights the offending cell. The bell button in the header (both
+the dashboard picker and monitor mode) aggregates breaches across every panel
+of the currently shown dashboard into a badge + dropdown list.
+
+```json
+"thresholds": [
+  { "field": "low_stock_items", "label": "Low stock SKUs", "warning": 1, "critical": 3, "direction": "above" }
+]
+```
+
+- `field`: the row field to check — independent of `options.valueField`/`columns`, so a table can threshold a column it doesn't even display.
+- `warning`/`critical`: at least one required; both optional otherwise.
+- `direction`: `"above"` (default, alerts when the value is ≥ the bound — queue length, open tickets) or `"below"` (alerts when the value is ≤ the bound — stock quantity, uptime percentage).
+- `label`: optional, shown in the alerts dropdown instead of the raw field name.
+
+`provider-showcase.json`'s `kpi-secondary-low-stock`/`table-secondary-inventory`
+panels are a live example (also exercised by `DatasourceIdentificationIT`).
+This is fixed-threshold-only (v1); adaptive/statistical thresholds are a
+possible future addition on top of the same evaluation pipeline.
+
 Validate or apply a config edit without restarting the app:
 
 ```bash
@@ -494,6 +536,8 @@ changes nothing**, so a bad edit can never take down a running wall display.
 | GET | `/api/dashboards/{id}` | Full dashboard definition (panels, grid, refresh policy) |
 | GET | `/api/dashboards/{id}/panels/{panelId}/data` | Execute the panel's data definition, return tabular JSON |
 | GET | `/api/runtime/panels` | Last success/failure, duration, row count per panel |
+| GET | `/api/query-stats` | Count/avg/min/max/p95/p99 execution duration per data definition, since process start |
+| GET | `/api/query-stats/{dataId}/plan` | On-demand `EXPLAIN` for a jdbc data definition, plus simple full-scan warnings |
 | POST | `/api/config/validate` | Dry-run validation of the config as it sits on disk |
 | POST | `/api/config/reload` | Validate and, if fully valid, hot-swap the running config (400 + errors otherwise, nothing changes) |
 | GET | `/actuator/health` | Liveness/readiness |
@@ -511,7 +555,8 @@ to a client of this API. Panel data responses are shaped as:
   "executionTimeMs": 7,
   "rowCount": 4,
   "status": "OK",
-  "errorMessage": null
+  "errorMessage": null,
+  "datasourceName": "Demo H2 (Ticketing & Payments)"
 }
 ```
 
@@ -521,6 +566,10 @@ to a client of this API. Panel data responses are shaped as:
 as-is — `DataEngine` turns it into a thrown exception first, so a failed
 panel still surfaces as a non-2xx response with an `{error, message,
 timestamp}` body, exactly as before this endpoint gained the two new fields.
+`datasourceName` is the connection's `display-name` (or its config key as a
+fallback, see [Adding a datasource](#adding-a-datasource)) — attached by
+`DataEngine`, not by the provider, once a result is known to be a success; a
+cache hit replays the same value since it's baked into the cached result.
 
 `/api/runtime/panels` returns one entry per panel that has been requested at
 least once since the process started:
@@ -546,6 +595,42 @@ doesn't clear a prior failure's `lastError`, and a failure doesn't clear
 currently erroring still shows what it looked like when it last worked,
 alongside what's wrong now.
 
+### Query stats: `/query-stats.html`
+
+A fixed (not dashboard-as-code) page listing every loaded data definition —
+across every dashboard — with its real execution history: which connection
+it runs against (its `display-name`, with the technical key underneath),
+last execution time, last duration, records read, total executions/errors,
+and avg/min/max/p95/p99 duration, each of the last four paired with *when* it
+happened. Meant for one question: is the system currently stressing a
+connected environment? Only real provider executions (cache misses) count —
+a data definition served entirely from cache shows `0` total executions even
+under heavy panel traffic, by design (see [Result caching](#result-caching-all-providers)).
+
+Stats are in-memory and reset on restart, same tradeoff as the Micrometer
+metrics above — `avg`/`min`/`max` are exact for the process lifetime;
+`p95`/`p99` are computed from a bounded reservoir of the most recent 500
+samples per data definition, so they're exact for that recent window and
+approximate over the full lifetime.
+
+Each row has a **Plan** button that fetches `/api/query-stats/{id}/plan` on
+demand — never automatically, so browsing this page never adds load to a
+datasource by itself. Only jdbc data definitions on **H2** or **SQLite**
+dialects return a real plan today (the only dialects with an active driver);
+anything else reports itself unsupported rather than guess at unproven
+`EXPLAIN` syntax.
+
+The raw `EXPLAIN` text (H2's is the rewritten SQL with access comments;
+SQLite's is a small per-step table) isn't self-explanatory on its own, so
+it's parsed into structured **access paths** — one row per table/index
+touched, its access type (full scan vs. indexed search), and a plain-language
+detail — shown as the primary view, with a full scan visually flagged; the
+unparsed plan is still available underneath in a collapsed "Raw plan"
+section. A query against `INFORMATION_SCHEMA` (as in the "Database Overview"
+sample dashboards) legitimately has no table/index access path to extract —
+H2 doesn't tag catalog reads the same way — and says so rather than showing
+nothing.
+
 ## Project structure
 
 ```
@@ -557,20 +642,23 @@ src/main/java/com/panopticon/
 ├── data/        DataProvider SPI, DataProviderRegistry, DataEngine, DataResultCache
 │   ├── jdbc/    JdbcDataProvider, SqlGuard, SqlDialect
 │   ├── jira/    JiraDataProvider, MockJiraClient
-│   └── recording/  DataRecorder (JSONL), RecordingImporter + one-shot import runner
+│   ├── recording/  DataRecorder (JSONL), RecordingImporter + one-shot import runner
+│   ├── plan/    ExplainCapable, PlanStep, QueryPlanResult (query stats' on-demand EXPLAIN)
+│   └── stats/   QueryExecutionStatsTracker, QueryStatsSnapshot (query stats' execution history)
 ├── runtime/     Per-panel refresh-health tracking
 └── api/         REST controllers + error handling
 
 src/main/resources/
-├── static/      Frontend (index.html, monitor.html, css/, js/)
+├── static/      Frontend (index.html, monitor.html, query-stats.html, css/, js/)
 └── db/
-    ├── mock/    H2 demo schema + seed data (tickets, payments)
-    ├── sqlite/  SQLite demo schema + seed data (edge_nodes)
-    └── recording/  Versioned DDL for the recording import table (v1 + upgrade template)
+    ├── mock/      H2 demo schema + seed data (tickets, payments)
+    ├── sqlite/    SQLite demo schema + seed data (edge_nodes)
+    ├── warehouse/ A second, independent SQLite demo schema + seed data (warehouse_items)
+    └── recording/ Versioned DDL for the recording import table (v1 + upgrade template)
 
 config/
 ├── dashboards/  6 sample dashboards — see "Sample dashboards" above
-└── data/        30 sample data definitions backing them
+└── data/        33 sample data definitions backing them
 
 it-config/       Test-only dashboards/data for the production-like integration suite
 src/test/        Unit tests (*Test) + integration suite (*IT) — see "Development & testing"
@@ -585,11 +673,14 @@ Plain HTML/CSS/JS ES modules (no build step) served from `static/`, using
 layout. `js/dashboard.js` is the shared rendering engine used by both the picker
 page and monitor mode; each panel fetches and re-renders independently on its own
 `refresh.intervalSeconds`, with a status dot (ok/error/pending), a "how often /
-how recently" label, a loading state, and an isolated per-panel error state
-(one panel failing never affects its siblings). None of this changed with
-the provider refactor — the frontend consumes the same tabular JSON
-regardless of which provider produced it, and never sees a `dataRef`/
-`queryRef` field at all (that's resolved entirely server-side).
+how recently" label (which also names the panel's connection once its first
+fetch resolves, e.g. "every 30s · Local SQLite (Edge Nodes) · just now" —
+truncated with an ellipsis, full name in the tooltip, on narrow panels), a
+loading state, and an isolated per-panel error state (one panel failing never
+affects its siblings). None of this changed with the provider refactor — the
+frontend consumes the same tabular JSON regardless of which provider produced
+it, and never sees a `dataRef`/`queryRef` field at all (that's resolved
+entirely server-side).
 
 Monitor mode (`/monitor.html`) rotates through dashboards whose
 `rotation.enabled` is true, showing each for its own `rotation.durationSeconds`,
@@ -598,7 +689,17 @@ rotation, pause/prev/next controls (also bindable via space/←/→), a real
 Fullscreen API toggle (`F`), and a layout that stretches panels to fill the
 screen edge-to-edge instead of leaving dead space below a fixed row height.
 
-Theming: a header button on both pages cycles **auto → light → dark**
+`/query-stats.html` (see [Query stats](#query-stats-query-statshtml)) is a
+third fixed page, reachable from the header nav on both the picker and
+monitor mode, reusing the same table markup/styling as a `table`-type panel.
+
+The bell button in the header (picker page and monitor mode) opens a dropdown
+of active fixed-threshold breaches (see "Fixed alerting thresholds" above),
+aggregated across every panel of the currently shown dashboard by
+`js/alerts.js`; the pure evaluation logic (no DOM) lives in `js/thresholds.js`
+and is invoked by `dashboard.js` on every panel refresh.
+
+Theming: a header button on all three pages cycles **auto → light → dark**
 (persisted in `localStorage`). Auto — the default — follows time of day
 (light 07:00–19:00, dark otherwise), re-checked periodically so a wall
 display spanning the boundary switches without a reload. Panel polling and

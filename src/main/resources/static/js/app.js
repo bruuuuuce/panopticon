@@ -1,6 +1,7 @@
 /** Entry point for the dashboard picker page (index.html). */
 import { Api } from './api.js';
 import { Dashboard } from './dashboard.js';
+import { Alerts } from './alerts.js';
 
 const selectEl = document.getElementById('dashboard-select');
 const titleEl = document.getElementById('dashboard-title');
@@ -41,10 +42,11 @@ async function loadDashboard(id) {
     setDashboardParam(id);
     titleEl.textContent = dashboard.title;
     descEl.textContent = dashboard.description || '';
-    controller = Dashboard.mount(gridEl, dashboard);
+    controller = Dashboard.mount(gridEl, dashboard, { onAlertsChanged: Alerts.setBreaches });
 }
 
 async function init() {
+    Alerts.init();
     try {
         const dashboards = await Api.listDashboards();
         if (dashboards.length === 0) {

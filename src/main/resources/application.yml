@@ -38,6 +38,7 @@ panopticon:
     # access to do that).
     demo-h2:
       provider: jdbc
+      display-name: "Demo H2 (Ticketing & Payments)"
       driver-class-name: org.h2.Driver
       jdbc-url: "jdbc:h2:mem:panopticon;DB_CLOSE_DELAY=-1"
       username: sa
@@ -55,6 +56,7 @@ panopticon:
     # datasource is small/read-mostly enough that pooling buys nothing here.
     local-sqlite:
       provider: jdbc
+      display-name: "Local SQLite (Edge Nodes)"
       driver-class-name: org.sqlite.JDBC
       jdbc-url: "jdbc:sqlite:file::memory:?cache=shared"
       dialect: sqlite
@@ -63,11 +65,28 @@ panopticon:
       init-schema: "classpath:db/sqlite/schema.sql"
       init-data: "classpath:db/sqlite/data.sql"
 
+    # A second, independent SQLite datasource (own in-memory DB, own schema) -
+    # deliberately not given a display-name, so it demonstrates the fallback
+    # (falls back to this config key, "secondary-sqlite") rather than the
+    # explicit label the other datasources above have. Exists specifically to
+    # prove connection identification is correct even between two datasources
+    # of the *same* dialect/driver, not just distinguishable by dialect.
+    secondary-sqlite:
+      provider: jdbc
+      driver-class-name: org.sqlite.JDBC
+      jdbc-url: "jdbc:sqlite:file:secondary?mode=memory&cache=shared"
+      dialect: sqlite
+      read-only: false
+      max-pool-size: 1
+      init-schema: "classpath:db/warehouse/schema.sql"
+      init-data: "classpath:db/warehouse/data.sql"
+
     # Jira: no real credentials configured, so JiraDataProvider serves this
     # from an in-memory mock client instead of calling baseUrl. See
     # com.panopticon.data.jira.MockJiraClient.
     demo-jira:
       provider: jira
+      display-name: "Demo Jira (mocked)"
       base-url: "https://jira.example.com"
       auth:
         type: bearer

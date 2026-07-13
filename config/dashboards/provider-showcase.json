@@ -70,7 +70,10 @@
       "dataRef": "secondary-kpi-low-stock",
       "grid": { "row": 5, "col": 1, "rowSpan": 1, "colSpan": 3 },
       "refresh": { "intervalSeconds": 30, "enabled": true },
-      "options": { "valueField": "low_stock_items", "format": "number" }
+      "options": { "valueField": "low_stock_items", "format": "number" },
+      "thresholds": [
+        { "field": "low_stock_items", "label": "Low stock SKUs", "warning": 1, "critical": 3, "direction": "above" }
+      ]
     },
     {
       "id": "bar-secondary-inventory",
@@ -90,7 +93,10 @@
       "refresh": { "intervalSeconds": 30, "enabled": true },
       "options": {
         "columns": ["sku", "name", "warehouse", "quantity", "updated_at"]
-      }
+      },
+      "thresholds": [
+        { "field": "quantity", "label": "Low quantity", "warning": 10, "critical": 5, "direction": "below" }
+      ]
     }
   ]
 }

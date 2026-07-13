@@ -92,7 +92,7 @@ class DataRecorderTest {
     }
 
     private DataSourceDefinition datasource() {
-        return new DataSourceDefinition("ds1", "jdbc", "jdbc:h2:mem:x", "sa", "", "org.h2.Driver",
+        return new DataSourceDefinition("ds1", null, "jdbc", "jdbc:h2:mem:x", "sa", "", "org.h2.Driver",
                 "h2", true, 1, null, null, null, null, null);
     }
 }

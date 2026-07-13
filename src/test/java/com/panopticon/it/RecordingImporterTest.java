@@ -88,7 +88,7 @@ class RecordingImporterTest {
         Path recordingFile = record(dir,
                 RecordedExecution.failure("d1", datasource(dbFile), 1, "boom"));
 
-        DataSourceDefinition readOnly = new DataSourceDefinition("ro", "jdbc", "jdbc:sqlite:" + dbFile,
+        DataSourceDefinition readOnly = new DataSourceDefinition("ro", null, "jdbc", "jdbc:sqlite:" + dbFile,
                 null, null, "org.sqlite.JDBC", "sqlite", true, 1, null, null, null, null, null);
         RecordingImporter importer = new RecordingImporter(
                 new DataSourceRegistry(Map.of("ro", readOnly)), objectMapper);
@@ -141,7 +141,7 @@ class RecordingImporterTest {
     }
 
     private DataSourceDefinition datasource(Path dbFile) {
-        return new DataSourceDefinition("import-target", "jdbc", "jdbc:sqlite:" + dbFile,
+        return new DataSourceDefinition("import-target", null, "jdbc", "jdbc:sqlite:" + dbFile,
                 null, null, "org.sqlite.JDBC", "sqlite", false, 1, null, null, null, null, null);
     }
 

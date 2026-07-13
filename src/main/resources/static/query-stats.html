@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panopticon — Query stats</title>
+    <script src="/js/theme.js"></script>
+    <link rel="icon" type="image/png" href="/images/panopticon_icon_transparent_128.png">
+    <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+<header class="app-header">
+    <div class="brand">
+        <img class="brand-logo" src="/images/panopticon_icon_transparent_128.png" alt="Panopticon">
+        <span class="brand-title">Panopticon</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="theme-toggle" type="button">Theme: auto</button>
+    <a class="nav-link" href="/index.html">Dashboards</a>
+</header>
+
+<div class="dashboard-meta">
+    <h1>Query stats</h1>
+    <p>Every loaded data definition, with its real execution history — use this to see whether the system is
+        stressing a connected environment.</p>
+</div>
+
+<div id="query-stats-container"><div class="panel-loading">Loading&hellip;</div></div>
+
+<script type="module" src="/js/query-stats.js"></script>
+</body>
+</html>

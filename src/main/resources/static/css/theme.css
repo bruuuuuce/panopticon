@@ -184,6 +184,111 @@ a {
     border-color: var(--text-secondary);
 }
 
+/* ---------- Alerts bell (fixed-threshold breaches, see thresholds.js) ---------- */
+
+.alerts-widget {
+    position: relative;
+    display: flex;
+}
+
+.alerts-toggle {
+    position: relative;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.alerts-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.alerts-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    border-radius: 8px;
+    background: var(--status-warning);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+}
+
+.alerts-badge.level-critical { background: var(--status-critical); }
+
+.alerts-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    width: 320px;
+    max-height: 360px;
+    overflow-y: auto;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    padding: 6px;
+}
+
+.alerts-empty {
+    padding: 14px 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+.alert-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+}
+
+.alert-item + .alert-item {
+    border-top: 1px solid var(--border);
+}
+
+.alert-item-panel {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.alert-item-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 2px 0;
+}
+
+.alert-level-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #fff;
+    flex: none;
+}
+
+.alert-level-badge.level-warning { background: var(--status-warning); }
+.alert-level-badge.level-critical { background: var(--status-critical); }
+
 .dashboard-meta {
     padding: 14px 20px 0;
 }
@@ -250,6 +355,11 @@ a {
 
 .status-dot.status-ok { background: var(--status-good); }
 .status-dot.status-error { background: var(--status-critical); }
+/* A panel that fetched fine but whose data crossed a configured threshold
+   (see thresholds.js) - distinct meaning from status-error (fetch failed),
+   same visual weight for status-breach since both need attention now. */
+.status-dot.status-warn { background: var(--status-warning); }
+.status-dot.status-breach { background: var(--status-critical); }
 .status-dot.status-pending {
     background: var(--text-muted);
     animation: pulse 1.4s ease-in-out infinite;
@@ -262,10 +372,13 @@ a {
 
 .panel-header .refresh-time {
     flex: none;
+    max-width: 45%;
     font-size: 11px;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .panel-body {
@@ -307,6 +420,9 @@ a {
     line-height: 1.1;
     color: var(--text-primary);
 }
+
+.kpi-value.level-warning { color: var(--status-warning); }
+.kpi-value.level-critical { color: var(--status-critical); }
 
 .kpi-unit {
     font-size: 18px;
@@ -357,6 +473,16 @@ table.panel-table tbody tr:hover td {
     color: var(--text-primary);
 }
 
+table.panel-table tbody td.cell-threshold-warning {
+    background: color-mix(in srgb, var(--status-warning) 16%, transparent);
+    color: var(--status-warning);
+}
+
+table.panel-table tbody td.cell-threshold-critical {
+    background: color-mix(in srgb, var(--status-critical) 16%, transparent);
+    color: var(--status-critical);
+}
+
 /* ---------- Chart container ---------- */
 
 .chart-canvas {
@@ -376,6 +502,135 @@ table.panel-table tbody tr:hover td {
 }
 
 /* ---------- Toast (config/validation errors etc.) ---------- */
+
+/* ---------- Query stats page ---------- */
+
+.stats-table-wrap {
+    height: auto;
+    overflow-x: auto;
+    padding: 0 20px 24px;
+}
+
+.stats-table-wrap table.panel-table th,
+.stats-table-wrap table.panel-table td {
+    vertical-align: top;
+}
+
+.stat-value {
+    color: var(--text-primary);
+}
+
+.stat-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+.stat-errors {
+    color: var(--status-critical);
+}
+
+.stat-status-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #fff;
+}
+
+.stat-status-badge.status-good { background: var(--status-good); }
+.stat-status-badge.status-critical { background: var(--status-critical); }
+
+.plan-toggle {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    white-space: nowrap;
+}
+
+.plan-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.plan-row td.plan-cell {
+    background: var(--surface-raised);
+    padding: 12px 14px;
+    white-space: normal;
+}
+
+.plan-table-wrap {
+    height: auto;
+    max-height: 260px;
+}
+
+.plan-unsupported {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.plan-summary {
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.plan-steps-table {
+    margin-bottom: 10px;
+}
+
+.access-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.access-badge.access-full-scan,
+.plan-summary .access-full-scan {
+    background: color-mix(in srgb, var(--status-warning) 20%, transparent);
+    color: var(--status-warning);
+}
+
+.access-badge.access-index-search,
+.plan-summary .access-index-search {
+    background: color-mix(in srgb, var(--status-good) 18%, transparent);
+    color: var(--status-good);
+}
+
+.access-badge.access-other {
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.plan-raw {
+    font-size: 12px;
+}
+
+.plan-raw summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px 0;
+}
+
+.plan-raw summary:hover {
+    color: var(--text-secondary);
+}
+
+.plan-raw .plan-table-wrap {
+    margin-top: 6px;
+}
 
 /* ---------- Monitor mode ---------- */
 
@@ -460,6 +715,16 @@ body.monitor {
 .monitor-controls button.active {
     border-color: var(--series-1);
     color: var(--series-1);
+}
+
+/* Overrides the generic `.monitor-controls button` surface/padding so the bell
+   keeps the same ghost look as .theme-toggle on both index.html and monitor.html
+   - the higher specificity of that generic rule would otherwise win. */
+.monitor-controls .alerts-toggle {
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    font-size: 14px;
 }
 
 .monitor-controls .nav-link {

@@ -2,6 +2,9 @@ package com.panopticon.data.jdbc;
 
 import com.panopticon.data.DataExecutionContext;
 import com.panopticon.data.DataProvider;
+import com.panopticon.data.plan.ExplainCapable;
+import com.panopticon.data.plan.PlanStep;
+import com.panopticon.data.plan.QueryPlanResult;
 import com.panopticon.model.ColumnDefinition;
 import com.panopticon.model.DataDefinition;
 import com.panopticon.model.DataResult;
@@ -30,6 +33,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Executes SQL data definitions against any {@code provider: jdbc} datasource
@@ -44,10 +49,11 @@ import java.util.Map;
  * {@link DataResult}.
  */
 @Component
-public class JdbcDataProvider implements DataProvider {
+public class JdbcDataProvider implements DataProvider, ExplainCapable {
 
     private static final Logger log = LoggerFactory.getLogger(JdbcDataProvider.class);
     public static final String PROVIDER_TYPE = "jdbc";
+    private static final Pattern H2_PLAN_COMMENT = Pattern.compile("/\\*\\s*(.+?)\\s*\\*/");
 
     private final Map<String, DataSource> pools;
 
@@ -118,6 +124,127 @@ public class JdbcDataProvider implements DataProvider {
         } catch (org.springframework.dao.DataAccessException e) {
             return DataResult.error("Data definition '%s' failed: %s".formatted(definition.id(), rootMessage(e)));
         }
+    }
+
+    /**
+     * Best-effort {@code EXPLAIN}, on demand — never called from {@link #execute}.
+     * Only H2 and SQLite are wired up (the only dialects with an active driver
+     * today); GENERIC/ORACLE report themselves unsupported rather than guess at
+     * unproven syntax. Warnings are simple keyword heuristics over the driver's
+     * own plan text (see {@code recording/README} conventions on "no ML in this
+     * phase") — a hint to look closer, not a query optimizer.
+     */
+    @Override
+    public QueryPlanResult explain(DataExecutionContext context) {
+        DataDefinition definition = context.definition();
+        SqlGuard.assertReadOnly(definition.sql());
+        SqlDialect dialect = SqlDialect.fromConfig(context.datasource().dialect());
+
+        DataSource pool = pools.get(context.datasource().name());
+        if (pool == null) {
+            return QueryPlanResult.unsupported(dialect,
+                    "Datasource '%s' is not a jdbc datasource".formatted(context.datasource().name()));
+        }
+
+        String sql = stripTrailingSemicolon(definition.sql());
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(pool);
+        return switch (dialect) {
+            case SQLITE -> explainSqlite(jdbcTemplate, sql, dialect);
+            case H2 -> explainH2(jdbcTemplate, sql, dialect);
+            case GENERIC, ORACLE -> QueryPlanResult.unsupported(dialect,
+                    "EXPLAIN is not implemented for dialect " + dialect + " yet");
+        };
+    }
+
+    /** SQLite's own plan steps read e.g. "SCAN users" (full scan) vs "SEARCH users USING INDEX ...". */
+    private QueryPlanResult explainSqlite(JdbcTemplate jdbcTemplate, String sql, SqlDialect dialect) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("EXPLAIN QUERY PLAN " + sql);
+        List<PlanStep> steps = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Object detail = row.get("detail");
+            if (detail != null) {
+                steps.add(parseSqliteStep(detail.toString()));
+            }
+        }
+        return QueryPlanResult.of(dialect, rows, steps, warningsFrom(steps));
+    }
+
+    private PlanStep parseSqliteStep(String detail) {
+        String upper = detail.toUpperCase(Locale.ROOT);
+        String[] tokens = detail.trim().split("\\s+");
+        boolean isTableAccess = upper.startsWith("SCAN") || upper.startsWith("SEARCH");
+        String subject = isTableAccess && tokens.length > 1 ? tokens[1] : null;
+
+        if (upper.contains("USING INDEX") || upper.contains("USING COVERING INDEX")
+                || upper.contains("USING INTEGER PRIMARY KEY") || upper.contains("USING PRIMARY KEY")) {
+            return new PlanStep(subject, PlanStep.AccessType.INDEX_SEARCH, detail);
+        }
+        if (upper.startsWith("SCAN")) {
+            return new PlanStep(subject, PlanStep.AccessType.FULL_SCAN, detail);
+        }
+        return new PlanStep(subject, PlanStep.AccessType.OTHER, detail);
+    }
+
+    /**
+     * H2's "plan" is the rewritten SQL itself, annotated with one comment per
+     * table access: {@code /* SCHEMA.TABLE.tableScan *}{@code /} for an unindexed
+     * read, or {@code /* SCHEMA.INDEX_NAME: condition *}{@code /} when an index
+     * narrows it. Those comments are the only structured complexity signal H2
+     * gives us, so this pulls every one of them out of the plan text rather
+     * than just keyword-matching the whole string.
+     */
+    private QueryPlanResult explainH2(JdbcTemplate jdbcTemplate, String sql, SqlDialect dialect) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("EXPLAIN " + sql);
+        List<PlanStep> steps = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            for (Object value : row.values()) {
+                if (value == null) {
+                    continue;
+                }
+                Matcher matcher = H2_PLAN_COMMENT.matcher(value.toString());
+                while (matcher.find()) {
+                    PlanStep step = parseH2Comment(matcher.group(1));
+                    if (step != null) {
+                        steps.add(step);
+                    }
+                }
+            }
+        }
+        return QueryPlanResult.of(dialect, rows, steps, warningsFrom(steps));
+    }
+
+    private PlanStep parseH2Comment(String comment) {
+        if (comment.equalsIgnoreCase("meta")) {
+            // H2 tags system-catalog (INFORMATION_SCHEMA) reads with a bare "/* meta */" -
+            // not a real table/index access, so it carries no complexity signal worth surfacing.
+            return null;
+        }
+        if (comment.endsWith(".tableScan")) {
+            String table = comment.substring(0, comment.length() - ".tableScan".length());
+            return new PlanStep(table, PlanStep.AccessType.FULL_SCAN, "Full table scan on " + table);
+        }
+        int colon = comment.indexOf(':');
+        if (colon > 0) {
+            String index = comment.substring(0, colon).trim();
+            String condition = comment.substring(colon + 1).trim();
+            return new PlanStep(index, PlanStep.AccessType.INDEX_SEARCH, condition.isEmpty() ? "Index lookup" : condition);
+        }
+        return new PlanStep(comment, PlanStep.AccessType.OTHER, comment);
+    }
+
+    private List<String> warningsFrom(List<PlanStep> steps) {
+        List<String> warnings = new ArrayList<>();
+        for (PlanStep step : steps) {
+            if (step.accessType() == PlanStep.AccessType.FULL_SCAN) {
+                warnings.add("Possible full table scan detected: " + (step.subject() != null ? step.subject() : step.detail()));
+            }
+        }
+        return warnings;
+    }
+
+    private String stripTrailingSemicolon(String sql) {
+        String trimmed = sql.trim();
+        return trimmed.endsWith(";") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
     }
 
     private DataResult extract(ResultSet rs, int maxRows) throws SQLException {

@@ -1,0 +1,9 @@
+{
+  "id": "secondary-inventory-items",
+  "name": "Inventory items",
+  "provider": "jdbc",
+  "datasource": "secondary-sqlite",
+  "sql": "SELECT sku, name, warehouse, quantity, updated_at FROM warehouse_items ORDER BY warehouse, sku",
+  "timeoutMs": 5000,
+  "maxRows": 50
+}

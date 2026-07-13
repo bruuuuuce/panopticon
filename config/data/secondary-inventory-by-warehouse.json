@@ -1,0 +1,9 @@
+{
+  "id": "secondary-inventory-by-warehouse",
+  "name": "Inventory quantity by warehouse",
+  "provider": "jdbc",
+  "datasource": "secondary-sqlite",
+  "sql": "SELECT warehouse, SUM(quantity) AS total_quantity FROM warehouse_items GROUP BY warehouse ORDER BY warehouse",
+  "timeoutMs": 5000,
+  "maxRows": 20
+}

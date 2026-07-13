@@ -6,6 +6,7 @@ import com.panopticon.model.DataResultStatus;
 import com.panopticon.model.DataSourceDefinition;
 import com.panopticon.data.recording.DataRecorder;
 import com.panopticon.data.recording.RecordedExecution;
+import com.panopticon.data.stats.QueryExecutionStatsTracker;
 import com.panopticon.registry.DataRegistry;
 import com.panopticon.registry.DataSourceRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -13,6 +14,7 @@ import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Owns the full lifecycle of resolving and running a data definition by id:
@@ -37,6 +39,7 @@ public class DataEngine {
     private final DataResultCache resultCache;
     private final MeterRegistry meterRegistry;
     private final DataRecorder recorder;
+    private final QueryExecutionStatsTracker statsTracker;
 
     public DataEngine(
             DataRegistry dataRegistry,
@@ -44,13 +47,15 @@ public class DataEngine {
             DataProviderRegistry providerRegistry,
             DataResultCache resultCache,
             MeterRegistry meterRegistry,
-            DataRecorder recorder) {
+            DataRecorder recorder,
+            QueryExecutionStatsTracker statsTracker) {
         this.dataRegistry = dataRegistry;
         this.dataSourceRegistry = dataSourceRegistry;
         this.providerRegistry = providerRegistry;
         this.resultCache = resultCache;
         this.meterRegistry = meterRegistry;
         this.recorder = recorder;
+        this.statsTracker = statsTracker;
     }
 
     public DataResult execute(String dataId) {
@@ -72,13 +77,20 @@ public class DataEngine {
                     // the exception-based flow the cache/controller/runtime-tracker already rely on.
                     throw new DataExecutionException(result.errorMessage());
                 }
+                // Attached here, not by the provider: DataEngine is the only layer that resolves a
+                // DataSourceDefinition (see its class javadoc), so this is the one place that can
+                // stamp a result with which connection actually served it, cached along with the
+                // rest of the result so cache hits replay the same identification.
+                result = result.withDatasourceName(datasource.displayName());
                 recordExecution(definition.id(), "ok", start);
                 recorder.record(RecordedExecution.success(definition.id(), datasource, result));
+                statsTracker.recordSuccess(definition.id(), (System.nanoTime() - start) / 1_000_000, result.rowCount(), Instant.now());
                 return result;
             } catch (RuntimeException e) {
+                long elapsedMs = (System.nanoTime() - start) / 1_000_000;
                 recordExecution(definition.id(), "error", start);
-                recorder.record(RecordedExecution.failure(
-                        definition.id(), datasource, (System.nanoTime() - start) / 1_000_000, e.getMessage()));
+                recorder.record(RecordedExecution.failure(definition.id(), datasource, elapsedMs, e.getMessage()));
+                statsTracker.recordFailure(definition.id(), elapsedMs, Instant.now());
                 throw e;
             }
         });

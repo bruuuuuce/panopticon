@@ -8,6 +8,7 @@ import com.panopticon.data.DataExecutionException;
 import com.panopticon.data.DataProviderRegistry;
 import com.panopticon.data.DataResultCache;
 import com.panopticon.data.recording.DataRecorder;
+import com.panopticon.data.stats.QueryExecutionStatsTracker;
 import com.panopticon.data.UnknownDataException;
 import com.panopticon.data.UnsupportedProviderException;
 import com.panopticon.model.DataDefinition;
@@ -162,7 +163,7 @@ class DataEngineFailureScenariosIT extends AbstractProductionLikeIT {
                 "prod-like-sqlite", null, null, 0, "SELECT 1", null, null, null, null);
         DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry,
                 new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry(),
-                new DataRecorder(RecordingSettings.disabled(), new ObjectMapper()));
+                new DataRecorder(RecordingSettings.disabled(), new ObjectMapper()), new QueryExecutionStatsTracker());
 
         assertThatThrownBy(() -> standalone.execute("bogus-provider-def"))
                 .isInstanceOf(UnsupportedProviderException.class);
@@ -174,7 +175,7 @@ class DataEngineFailureScenariosIT extends AbstractProductionLikeIT {
                 "totally-unknown-datasource", null, null, 0, "SELECT 1", null, null, null, null);
         DataEngine standalone = new DataEngine(new DataRegistry(List.of(bogus)), dataSourceRegistry, providerRegistry,
                 new DataResultCache(new SimpleMeterRegistry()), new SimpleMeterRegistry(),
-                new DataRecorder(RecordingSettings.disabled(), new ObjectMapper()));
+                new DataRecorder(RecordingSettings.disabled(), new ObjectMapper()), new QueryExecutionStatsTracker());
 
         assertThatThrownBy(() -> standalone.execute("bogus-datasource-def"))
                 .isInstanceOf(DataSourceRegistry.NoSuchDataSourceException.class);

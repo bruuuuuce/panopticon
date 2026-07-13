@@ -6,6 +6,7 @@
  */
 import { Api } from './api.js';
 import { Dashboard } from './dashboard.js';
+import { Alerts } from './alerts.js';
 
 const gridEl = document.getElementById('panel-grid');
 const titleEl = document.getElementById('current-dashboard-title');
@@ -28,6 +29,7 @@ let elapsedMs = 0;
 let durationMs = 20000;
 
 async function init() {
+    Alerts.init();
     try {
         const summaries = await Api.listDashboards();
         dashboards = summaries.filter((d) => !d.rotation || d.rotation.enabled !== false);
@@ -56,7 +58,7 @@ async function showCurrent() {
         progressBar.style.width = '0%';
         updateCountdown();
         if (controller) controller.destroy();
-        controller = Dashboard.mount(gridEl, dashboard, { fillHeight: true });
+        controller = Dashboard.mount(gridEl, dashboard, { fillHeight: true, onAlertsChanged: Alerts.setBreaches });
     } catch (err) {
         // The grid is being replaced by the error box, so the previous
         // dashboard's timers and chart instances must be torn down here too,

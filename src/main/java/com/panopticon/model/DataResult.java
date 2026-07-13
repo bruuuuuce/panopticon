@@ -27,13 +27,26 @@ public record DataResult(
         long executionTimeMs,
         int rowCount,
         DataResultStatus status,
-        String errorMessage
+        String errorMessage,
+        String datasourceName
 ) {
     public static DataResult ok(List<ColumnDefinition> columns, List<Map<String, Object>> rows, Instant generatedAt, long executionTimeMs) {
-        return new DataResult(columns, rows, generatedAt, executionTimeMs, rows.size(), DataResultStatus.OK, null);
+        return new DataResult(columns, rows, generatedAt, executionTimeMs, rows.size(), DataResultStatus.OK, null, null);
     }
 
     public static DataResult error(String errorMessage) {
-        return new DataResult(List.of(), List.of(), Instant.now(), 0, 0, DataResultStatus.ERROR, errorMessage);
+        return new DataResult(List.of(), List.of(), Instant.now(), 0, 0, DataResultStatus.ERROR, errorMessage, null);
+    }
+
+    /**
+     * Providers build a {@link DataResult} with no notion of the connection's
+     * human-facing name (only {@code DataEngine} resolves a
+     * {@link com.panopticon.model.DataSourceDefinition}, see its javadoc on
+     * staying provider-agnostic) — this lets {@code DataEngine} attach it
+     * afterward, so a panel can show which connection its data actually came
+     * from without every provider needing to know about display names.
+     */
+    public DataResult withDatasourceName(String datasourceName) {
+        return new DataResult(columns, rows, generatedAt, executionTimeMs, rowCount, status, errorMessage, datasourceName);
     }
 }

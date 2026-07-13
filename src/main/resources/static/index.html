@@ -17,7 +17,12 @@
     <select id="dashboard-select" aria-label="Select dashboard"></select>
     <div class="spacer"></div>
     <div class="clock" id="clock">--:--:--</div>
+    <div class="alerts-widget">
+        <button id="alerts-toggle" class="alerts-toggle" type="button" aria-label="Alerts">🔔<span id="alerts-badge" class="alerts-badge" hidden>0</span></button>
+        <div id="alerts-dropdown" class="alerts-dropdown" hidden></div>
+    </div>
     <button class="theme-toggle" type="button">Theme: auto</button>
+    <a class="nav-link" href="/query-stats.html">Query stats</a>
     <a class="nav-link" href="/monitor.html">Monitor mode</a>
 </header>
 
