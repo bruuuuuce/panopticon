@@ -1,0 +1,12 @@
+target/
+.git/
+.github/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+docs/
+recordings/
+it-config/
+*.log
+*.db

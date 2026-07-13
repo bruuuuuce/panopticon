@@ -1,6 +1,5 @@
 package com.panopticon.data;
 
-import com.panopticon.model.DataDefinition;
 import com.panopticon.model.DataResult;
 
 /**
@@ -21,9 +20,6 @@ public interface DataProvider {
 
     /** The {@code provider} value in datasource/data-definition JSON this implementation handles, e.g. "jdbc". */
     String providerType();
-
-    /** Whether this provider can execute the given definition — normally just {@code providerType().equals(definition.provider())}. */
-    boolean supports(DataDefinition definition);
 
     DataResult execute(DataExecutionContext context);
 }

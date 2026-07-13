@@ -85,10 +85,6 @@ public class JdbcDataProvider implements DataProvider {
         return PROVIDER_TYPE;
     }
 
-    @Override
-    public boolean supports(DataDefinition definition) {
-        return PROVIDER_TYPE.equals(definition.provider());
-    }
 
     @Override
     public DataResult execute(DataExecutionContext context) {

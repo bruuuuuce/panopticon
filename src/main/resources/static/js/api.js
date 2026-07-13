@@ -22,5 +22,4 @@ export const Api = {
     getDashboard: (dashboardId) => request(`/api/dashboards/${encodeURIComponent(dashboardId)}`),
     getPanelData: (dashboardId, panelId) =>
         request(`/api/dashboards/${encodeURIComponent(dashboardId)}/panels/${encodeURIComponent(panelId)}/data`),
-    getRuntimePanels: () => request('/api/runtime/panels'),
 };

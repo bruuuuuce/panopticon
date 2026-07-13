@@ -84,10 +84,6 @@ class ConfigValidatorPolicyValidationTest {
             return JdbcDataProvider.PROVIDER_TYPE;
         }
 
-        @Override
-        public boolean supports(DataDefinition definition) {
-            return true;
-        }
 
         @Override
         public com.panopticon.model.DataResult execute(com.panopticon.data.DataExecutionContext context) {

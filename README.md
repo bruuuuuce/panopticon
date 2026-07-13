@@ -188,6 +188,88 @@ out of the box:
 
 - `http://localhost:8080/` — dashboard picker + live panels
 - `http://localhost:8080/monitor.html` — fullscreen rotation between dashboards
+- `http://localhost:8080/actuator/health` — liveness/readiness;
+  `/actuator/metrics/panopticon.data.execution` and
+  `/actuator/metrics/panopticon.cache` expose per-data-id execution timings
+  and cache hit/miss/negative-hit counters (Micrometer — plug in a registry
+  like `micrometer-registry-prometheus` if you need a scrape endpoint)
+
+### Choosing which dashboards load: `--dashboards` / `--data`
+
+By default dashboards/data definitions come from `config/dashboards` and
+`config/data` (see [Configuration model](#configuration-model)). Both can be
+overridden at startup with a comma-separated list of locations, where each
+entry is either a single `.json` file or a directory of them:
+
+```bash
+java -jar target/panopticon.jar \
+    --dashboards=/srv/dashboards,extra/one-off-dashboard.json \
+    --data=/srv/data
+```
+
+Useful for pointing one binary at different dashboard sets per environment,
+or mixing a shared directory with a couple of one-off files. Being ordinary
+Spring properties, they also work as YAML (`dashboards: [...]`) or env vars.
+
+### Recording executed data: `--recording`
+
+```bash
+java -jar target/panopticon.jar --recording=recordings
+```
+
+records every *fresh* data execution (cache hits are replays and are not
+re-recorded) as one JSON line — data id, datasource, provider, status,
+timing, full columns/rows payload — to a daily-rolling
+`recordings/panopticon-YYYY-MM-DD.jsonl`, written on a background thread so
+panel serving never waits on disk. Equivalent long form:
+`panopticon.recording.enabled: true` + `panopticon.recording.directory`.
+
+The file is reusable data, not just a log. To load it into a database table:
+
+```bash
+# once, by hand, against the target database:
+#   run src/main/resources/db/recording/recording_table_v1.sql
+java -jar target/panopticon.jar \
+    --import-recording=recordings/panopticon-2026-07-13.jsonl \
+    --import-datasource=demo-h2 \
+    --import-table=panopticon_recordings \
+    --spring.main.web-application-type=none
+```
+
+This runs as a one-shot CLI (exit 0/1) instead of serving dashboards. The
+importer deliberately **never creates or alters tables**: the target table
+must already exist at the schema version it expects (`db/recording/` ships
+the versioned create script plus an upgrade template), the datasource must
+be configured `read-only: false` (writes go through a dedicated plain JDBC
+connection, never the read-only query pools), and re-importing the same file
+is idempotent — already-imported lines are skipped via the
+`(source_file, source_line)` primary key.
+
+### Docker
+
+```bash
+docker build -t panopticon .
+docker run -p 8080:8080 -v ./config:/app/config panopticon
+```
+
+Multi-stage build (Maven → JRE-only runtime); the sample `config/` is baked
+in as a default and can be replaced with a volume mount as above.
+
+### Development & testing
+
+```bash
+mvn test     # unit tests (surefire: *Test classes)
+mvn verify   # + the production-like integration suite (failsafe: *IT classes)
+```
+
+`mvn verify` boots real Spring contexts against temp-file SQLite databases
+with a background traffic simulator (five writer threads with weighted state
+machines), and covers realtime data validation, fault injection (missing/
+empty/schema-drifted/locked tables), concurrency/cache-collapse stress, and
+the recording/import round-trip. Fixtures live under `it-config/`. JaCoCo
+writes a merged coverage report to `target/site/jacoco/index.html`; CI
+(GitHub Actions, `.github/workflows/ci.yml`) runs `mvn verify` on every
+push/PR.
 
 ## Sample dashboards
 
@@ -225,7 +307,8 @@ a data definition is never duplicated inside a dashboard/panel definition:
 Both `config/data` and `config/dashboards` directories are read from disk
 (not the classpath) at startup — paths are configurable via
 `panopticon.config.dashboards-path` / `panopticon.config.data-path`, relative
-to the working directory by default. **If the config is invalid the app fails
+to the working directory by default, or overridden entirely with the
+[`--dashboards` / `--data` startup flags](#choosing-which-dashboards-load---dashboards----data). **If the config is invalid the app fails
 to start** (unsupported provider type, unknown datasource, missing SQL for a
 jdbc definition, missing operation for a jira definition, duplicate ids,
 rejected SQL, etc.) rather than starting half-broken; the startup log names
@@ -344,6 +427,7 @@ the frontend re-fetches that panel's data:
 {
   "id": "support-ops",
   "title": "Support Operations Overview",
+  "accentColor": "#c98500",
   "gridColumns": 12,
   "rotation": { "durationSeconds": 20, "enabled": true },
   "panels": [
@@ -359,6 +443,13 @@ the frontend re-fetches that panel's data:
   ]
 }
 ```
+
+`accentColor` (optional, hex like `#3987e5` or `#abc`, validated at load
+time) tints the page background with a bottom-to-top gradient wash in that
+color — panel surfaces are never tinted, so chart/text contrast is
+unaffected. Give each environment's dashboards a different accent (say, blue
+for dev, amber for prod) and they become distinguishable at a glance, which
+is exactly what a wall display cycling through environments needs.
 
 `dataRef` is the current field name. The older `queryRef` name (from before
 the Query → Data rename) is still accepted as a fallback — if `dataRef` is
@@ -381,15 +472,19 @@ rendering hints live, since each chart type only needs 2-3 fields:
 `options` keys, or a `grid` position that's out of bounds for the dashboard's
 `gridColumns`.
 
-Validate a config edit without restarting the app:
+Validate or apply a config edit without restarting the app:
 
 ```bash
-curl -X POST http://localhost:8080/api/config/validate
+curl -X POST http://localhost:8080/api/config/validate   # dry run: report errors only
+curl -X POST http://localhost:8080/api/config/reload     # apply, if (and only if) valid
 ```
 
-This is a **dry run** — it re-reads `config/` from disk and reports errors, but
-does not hot-swap the running dashboards/data definitions (restart the app
-to pick up changes). It exists for authoring feedback, not live reload.
+`validate` re-reads the effective config locations from disk and reports
+errors without touching the running app. `reload` does the same load +
+validation and, only when fully valid, atomically swaps the live registries
+(and clears the result cache, since a definition may have changed under the
+same id) — an invalid config returns **400 with the validation errors and
+changes nothing**, so a bad edit can never take down a running wall display.
 
 ## REST API
 
@@ -399,7 +494,10 @@ to pick up changes). It exists for authoring feedback, not live reload.
 | GET | `/api/dashboards/{id}` | Full dashboard definition (panels, grid, refresh policy) |
 | GET | `/api/dashboards/{id}/panels/{panelId}/data` | Execute the panel's data definition, return tabular JSON |
 | GET | `/api/runtime/panels` | Last success/failure, duration, row count per panel |
-| POST | `/api/config/validate` | Dry-run validation of `config/` as it sits on disk |
+| POST | `/api/config/validate` | Dry-run validation of the config as it sits on disk |
+| POST | `/api/config/reload` | Validate and, if fully valid, hot-swap the running config (400 + errors otherwise, nothing changes) |
+| GET | `/actuator/health` | Liveness/readiness |
+| GET | `/actuator/metrics/{name}` | Micrometer meters, incl. `panopticon.data.execution` and `panopticon.cache` |
 
 This surface is provider-agnostic and unchanged by which provider backs a
 given panel — a SQLite-backed panel and a Jira-backed panel are indistinguishable
@@ -458,7 +556,8 @@ src/main/java/com/panopticon/
 ├── registry/    In-memory lookups (dashboards, data definitions, datasources)
 ├── data/        DataProvider SPI, DataProviderRegistry, DataEngine, DataResultCache
 │   ├── jdbc/    JdbcDataProvider, SqlGuard, SqlDialect
-│   └── jira/    JiraDataProvider, MockJiraClient
+│   ├── jira/    JiraDataProvider, MockJiraClient
+│   └── recording/  DataRecorder (JSONL), RecordingImporter + one-shot import runner
 ├── runtime/     Per-panel refresh-health tracking
 └── api/         REST controllers + error handling
 
@@ -466,12 +565,15 @@ src/main/resources/
 ├── static/      Frontend (index.html, monitor.html, css/, js/)
 └── db/
     ├── mock/    H2 demo schema + seed data (tickets, payments)
-    └── sqlite/  SQLite demo schema + seed data (edge_nodes)
+    ├── sqlite/  SQLite demo schema + seed data (edge_nodes)
+    └── recording/  Versioned DDL for the recording import table (v1 + upgrade template)
 
 config/
 ├── dashboards/  6 sample dashboards — see "Sample dashboards" above
 └── data/        30 sample data definitions backing them
 
+it-config/       Test-only dashboards/data for the production-like integration suite
+src/test/        Unit tests (*Test) + integration suite (*IT) — see "Development & testing"
 docs/screenshots/  Images embedded in this README
 ```
 
@@ -496,6 +598,13 @@ rotation, pause/prev/next controls (also bindable via space/←/→), a real
 Fullscreen API toggle (`F`), and a layout that stretches panels to fill the
 screen edge-to-edge instead of leaving dead space below a fixed row height.
 
+Theming: a header button on both pages cycles **auto → light → dark**
+(persisted in `localStorage`). Auto — the default — follows time of day
+(light 07:00–19:00, dark otherwise), re-checked periodically so a wall
+display spanning the boundary switches without a reload. Panel polling and
+monitor rotation pause automatically while the tab is hidden and resume
+(with an immediate refresh) when it's shown again.
+
 ## SQL read-only guard
 
 `SqlGuard` (used only by the jdbc provider) rejects any statement that isn't
@@ -518,7 +627,6 @@ substitute for real database permissions. See [Safety notes](#safety-notes).
 
 ## Known limitations (by design, for this MVP)
 
-- No hot config reload — `/api/config/validate` is dry-run only, restart to apply changes.
 - No auth — this is meant to run inside a trusted network/VPN for an internal team.
 - The Jira provider is mock-only — see [The jira provider](#the-jira-provider). No real HTTP call happens yet.
 - No dynamic/external plugin loading — providers are compiled-in Spring beans, not JARs discovered at runtime. See [Data providers](#data-providers).

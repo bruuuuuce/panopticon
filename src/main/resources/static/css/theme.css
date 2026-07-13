@@ -377,20 +377,6 @@ table.panel-table tbody tr:hover td {
 
 /* ---------- Toast (config/validation errors etc.) ---------- */
 
-.toast {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    background: var(--surface-raised);
-    border: 1px solid var(--status-critical);
-    color: var(--text-primary);
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    max-width: 360px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
 /* ---------- Monitor mode ---------- */
 
 body.monitor {
