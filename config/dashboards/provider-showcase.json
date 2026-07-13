@@ -1,7 +1,7 @@
 {
   "id": "provider-showcase",
   "title": "Provider Showcase",
-  "description": "One dashboard, two non-JDBC-only provider types: SQLite (jdbc) and a mocked Jira (jira) — proof the frontend/dashboard model doesn't care where a panel's data comes from.",
+  "description": "Multiple providers and multiple datasources of the same provider type (two independent SQLite connections plus a mocked Jira) — proof the frontend correctly identifies which connection backed each panel, not just which provider.",
   "gridColumns": 12,
   "rotation": { "durationSeconds": 20, "enabled": true },
   "panels": [
@@ -61,6 +61,35 @@
       "refresh": { "intervalSeconds": 30, "enabled": true },
       "options": {
         "columns": ["key", "summary", "status", "priority", "assignee", "created"]
+      }
+    },
+    {
+      "id": "kpi-secondary-low-stock",
+      "title": "Low Stock Items",
+      "type": "stat",
+      "dataRef": "secondary-kpi-low-stock",
+      "grid": { "row": 5, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": { "valueField": "low_stock_items", "format": "number" }
+    },
+    {
+      "id": "bar-secondary-inventory",
+      "title": "Inventory Quantity by Warehouse",
+      "type": "bar",
+      "dataRef": "secondary-inventory-by-warehouse",
+      "grid": { "row": 5, "col": 4, "rowSpan": 2, "colSpan": 4 },
+      "refresh": { "intervalSeconds": 60, "enabled": true },
+      "options": { "xField": "warehouse", "yField": "total_quantity", "seriesName": "Quantity" }
+    },
+    {
+      "id": "table-secondary-inventory",
+      "title": "Inventory Items (Secondary SQLite)",
+      "type": "table",
+      "dataRef": "secondary-inventory-items",
+      "grid": { "row": 5, "col": 8, "rowSpan": 2, "colSpan": 5 },
+      "refresh": { "intervalSeconds": 30, "enabled": true },
+      "options": {
+        "columns": ["sku", "name", "warehouse", "quantity", "updated_at"]
       }
     }
   ]
