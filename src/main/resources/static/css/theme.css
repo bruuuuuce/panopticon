@@ -102,8 +102,10 @@ a {
 
 .app-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 20px;
+    row-gap: 8px;
     padding: 12px 20px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -140,6 +142,12 @@ a {
     padding: 6px 10px;
     font-family: var(--font-sans);
     font-size: 13px;
+    /* A <select>'s default flex-basis floors at its content width, which on a
+       narrow viewport pushes .spacer/.clock/the toggles off-screen instead of
+       shrinking; min-width: 0 removes that floor so it can shrink like any
+       other flex item (flex-shrink: 1 already applies by default) without
+       changing its width on a normal-width header. */
+    min-width: 0;
 }
 
 .app-header .spacer {
@@ -670,8 +678,10 @@ body.monitor {
 
 .monitor-bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
+    row-gap: 8px;
     padding: 10px 20px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -723,8 +733,11 @@ body.monitor {
 
 .monitor-controls {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: 6px;
+    row-gap: 8px;
 }
 
 .monitor-controls button {
@@ -820,4 +833,70 @@ body.monitor {
 
 .monitor-body table.panel-table {
     font-size: 14px;
+}
+
+/* ---------- Responsive (tablet / narrow laptop, ~600-1024px) ---------- */
+
+@media (max-width: 1024px) {
+    /* Tighter chrome: less wasted horizontal space once every header item
+       has already wrapped as needed via the unconditional flex-wrap above. */
+    .app-header,
+    .monitor-bar {
+        gap: 10px;
+        padding: 10px 14px;
+    }
+
+    .dashboard-meta {
+        padding: 12px 14px 0;
+    }
+
+    .dashboard-meta h1 {
+        font-size: 16px;
+    }
+
+    .dashboard-meta p {
+        font-size: 12px;
+    }
+
+    /* A 320px-wide dropdown anchored to a header button can run past the
+       right edge on a viewport this narrow - cap it instead of letting it
+       overflow off-screen. */
+    .alerts-dropdown {
+        max-width: calc(100vw - 32px);
+    }
+
+    /* Below this width, honoring the JSON-declared column/row layout (often
+       12 columns wide) makes every panel unreadably thin. Panels fall back to
+       a single stacked column, in source order, overriding the inline grid
+       styles dashboard.js sets from panel.grid - the standard responsive
+       dashboard pattern when the layout itself isn't recomputed per breakpoint. */
+    .panel-grid {
+        grid-template-columns: 1fr !important;
+        grid-template-rows: none !important;
+        grid-auto-rows: auto !important;
+        gap: 10px;
+        padding: 10px 14px 16px;
+    }
+
+    .panel {
+        grid-column: 1 / -1 !important;
+        grid-row: auto !important;
+        min-height: 220px;
+    }
+
+    /* Monitor mode normally fills exactly one screen (.monitor-body has a
+       fixed height and hidden overflow) because it's built for a wall
+       display at a known resolution. Stacked panels no longer fit that
+       assumption - and the header above may now be two rows tall - so this
+       lets the page scroll instead of clipping content. body.monitor's
+       overflow: hidden is untouched outside this breakpoint. */
+    .monitor-body {
+        height: auto;
+        min-height: calc(100vh - 47px - 3px);
+        overflow-y: auto;
+    }
+
+    .stats-table-wrap {
+        padding: 0 14px 16px;
+    }
 }
