@@ -1,5 +1,9 @@
 # Panopticon
 
+<p align="center">
+  <img src="src/main/resources/static/images/panopticon_icon_transparent_256.png" alt="Panopticon logo" width="160">
+</p>
+
 Panopticon is a self-contained **operational dashboard-as-code** tool for AM/support
 teams, not a generic BI tool: dashboards, panels and data definitions are
 JSON-defined artifacts, not user-built reports. Data retrieval is
@@ -8,6 +12,15 @@ from SQL, a REST API, or anything else; every data source type is a plugin
 behind one common interface. No JPA/Hibernate, no server-side chart
 rendering, no frontend framework/build step — a plain Spring Boot MVC app
 serving static assets.
+
+## Documentation
+
+- [Getting started](docs/GETTING_STARTED.md) — prerequisites, local startup,
+  Docker, health checks, and how to run the tests.
+- [Creating dashboards](docs/CREATING_DASHBOARDS.md) — create datasources,
+  data definitions, panels, dashboards, validation, and safe hot reload.
+- This README — architecture, providers, API reference, operational details,
+  and the complete configuration reference.
 
 ## Screenshots
 
