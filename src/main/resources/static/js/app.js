@@ -2,6 +2,7 @@
 import { Api } from './api.js';
 import { Dashboard } from './dashboard.js';
 import { Alerts } from './alerts.js';
+import { Adaptive } from './adaptive.js';
 
 const selectEl = document.getElementById('dashboard-select');
 const titleEl = document.getElementById('dashboard-title');
@@ -47,6 +48,7 @@ async function loadDashboard(id) {
 
 async function init() {
     Alerts.init();
+    Adaptive.init();
     try {
         const dashboards = await Api.listDashboards();
         if (dashboards.length === 0) {

@@ -54,6 +54,7 @@ function renderDropdown() {
                 <div class="alert-item-detail">
                     <span class="alert-level-badge level-${b.level}">${escapeHtml(b.level)}</span>
                     <span>${escapeHtml(b.label || humanize(b.field))}: ${formatCell(b.value)}</span>
+                    ${b.source === 'adaptive' ? '<span class="alert-source-badge" title="Detected by statistical anomaly detection, not a configured threshold">⚡ adaptive</span>' : ''}
                 </div>
             `).join('')}
         </div>

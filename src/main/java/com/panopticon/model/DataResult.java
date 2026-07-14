@@ -28,14 +28,15 @@ public record DataResult(
         int rowCount,
         DataResultStatus status,
         String errorMessage,
-        String datasourceName
+        String datasourceName,
+        AdaptiveBaseline adaptiveBaseline
 ) {
     public static DataResult ok(List<ColumnDefinition> columns, List<Map<String, Object>> rows, Instant generatedAt, long executionTimeMs) {
-        return new DataResult(columns, rows, generatedAt, executionTimeMs, rows.size(), DataResultStatus.OK, null, null);
+        return new DataResult(columns, rows, generatedAt, executionTimeMs, rows.size(), DataResultStatus.OK, null, null, null);
     }
 
     public static DataResult error(String errorMessage) {
-        return new DataResult(List.of(), List.of(), Instant.now(), 0, 0, DataResultStatus.ERROR, errorMessage, null);
+        return new DataResult(List.of(), List.of(), Instant.now(), 0, 0, DataResultStatus.ERROR, errorMessage, null, null);
     }
 
     /**
@@ -47,6 +48,16 @@ public record DataResult(
      * from without every provider needing to know about display names.
      */
     public DataResult withDatasourceName(String datasourceName) {
-        return new DataResult(columns, rows, generatedAt, executionTimeMs, rowCount, status, errorMessage, datasourceName);
+        return new DataResult(columns, rows, generatedAt, executionTimeMs, rowCount, status, errorMessage, datasourceName, adaptiveBaseline);
+    }
+
+    /**
+     * Only {@code DashboardController} knows a result is feeding a {@code stat}
+     * panel's {@code options.valueField} (see {@link AdaptiveBaseline}), so -
+     * like {@code withDatasourceName} - it's attached after the fact rather
+     * than known by the provider that produced the raw rows.
+     */
+    public DataResult withAdaptiveBaseline(AdaptiveBaseline adaptiveBaseline) {
+        return new DataResult(columns, rows, generatedAt, executionTimeMs, rowCount, status, errorMessage, datasourceName, adaptiveBaseline);
     }
 }

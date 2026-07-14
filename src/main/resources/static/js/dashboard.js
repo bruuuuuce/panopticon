@@ -7,7 +7,8 @@
 import { Api } from './api.js';
 import { Charts } from './charts.js';
 import { humanize, escapeHtml, formatCell, formatRelativeTime } from './format.js';
-import { evaluateThresholds, worstLevel } from './thresholds.js';
+import { evaluateThresholds, evaluateAdaptive, worstLevel } from './thresholds.js';
+import { Adaptive } from './adaptive.js';
 
 /** e.g. 30 -> "30s", 90 -> "1m30s", 120 -> "2m" */
 function formatInterval(seconds) {
@@ -140,6 +141,25 @@ function dotClassForLevel(level) {
     return 'status-dot status-ok';
 }
 
+/**
+ * Evaluates both fixed and (if the global toggle is on) adaptive breaches
+ * against `result`, updates the dot, renders, and reports the merged list.
+ * Factored out so flipping the Adaptive toggle can re-run this against each
+ * panel's already-fetched `state.lastResult` immediately, without waiting
+ * for the next poll — same idea as dashboard.js's existing theme-change re-render.
+ */
+function evaluateAndRender(state, result, onAlertsChanged) {
+    state.breaches = evaluateThresholds(state.panel, result);
+    if (Adaptive.isEnabled()) {
+        state.breaches = state.breaches.concat(evaluateAdaptive(state.panel, result));
+    }
+    const level = worstLevel(state.breaches);
+    state.dot.className = dotClassForLevel(level);
+    state.dot.title = level ? `${state.breaches.length} threshold breach(es), worst: ${level}` : '';
+    render(state, result);
+    if (onAlertsChanged) onAlertsChanged(state.panel.id, state.breaches, state.panel.title);
+}
+
 async function refresh(dashboardId, state, onAlertsChanged) {
     // A slow query (near its timeout) could still be in flight when the next
     // interval tick fires; skip that tick rather than let two fetches for the
@@ -154,12 +174,7 @@ async function refresh(dashboardId, state, onAlertsChanged) {
         state.lastRefreshAt = new Date();
         state.lastResult = result;
         state.datasourceName = result.datasourceName || null;
-        state.breaches = evaluateThresholds(state.panel, result);
-        const level = worstLevel(state.breaches);
-        state.dot.className = dotClassForLevel(level);
-        state.dot.title = level ? `${state.breaches.length} threshold breach(es), worst: ${level}` : '';
-        render(state, result);
-        if (onAlertsChanged) onAlertsChanged(state.panel.id, state.breaches, state.panel.title);
+        evaluateAndRender(state, result, onAlertsChanged);
     } catch (err) {
         state.breaches = [];
         state.dot.className = 'status-dot status-error';
@@ -253,6 +268,17 @@ function mount(gridEl, dashboard, { fillHeight = false, onAlertsChanged = null }
     };
     window.addEventListener('panopticon:theme-changed', themeChangeHandler);
 
+    // Flipping the Adaptive toggle should reflect instantly, not on the next poll -
+    // re-evaluate+re-render every panel that already has data, from that cached
+    // result (no re-fetch needed, the toggle doesn't change what the backend returns
+    // going forward, only which breaches the frontend chooses to compute from it).
+    const adaptiveModeChangeHandler = () => {
+        for (const state of states) {
+            if (state.lastResult) evaluateAndRender(state, state.lastResult, onAlertsChanged);
+        }
+    };
+    window.addEventListener('panopticon:adaptive-mode-changed', adaptiveModeChangeHandler);
+
     return {
         destroy() {
             clearInterval(clockTimerId);
@@ -260,6 +286,7 @@ function mount(gridEl, dashboard, { fillHeight = false, onAlertsChanged = null }
             window.removeEventListener('resize', resizeHandler);
             document.removeEventListener('visibilitychange', visibilityHandler);
             window.removeEventListener('panopticon:theme-changed', themeChangeHandler);
+            window.removeEventListener('panopticon:adaptive-mode-changed', adaptiveModeChangeHandler);
             document.body.style.removeProperty('--dashboard-accent');
             for (const state of states) {
                 if (state.timerId) clearInterval(state.timerId);

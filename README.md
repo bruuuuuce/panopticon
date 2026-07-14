@@ -511,8 +511,39 @@ of the currently shown dashboard into a badge + dropdown list.
 
 `provider-showcase.json`'s `kpi-secondary-low-stock`/`table-secondary-inventory`
 panels are a live example (also exercised by `DatasourceIdentificationIT`).
-This is fixed-threshold-only (v1); adaptive/statistical thresholds are a
-possible future addition on top of the same evaluation pipeline.
+
+#### Adaptive (statistical) thresholds — config-free, `stat` panels only
+
+A separate mechanism from fixed thresholds above: the **⚡ Adaptive** button in
+the header (dashboard picker and monitor mode) toggles anomaly detection
+on/off for every `stat` panel, app-wide — no JSON, no per-panel opt-in. When
+on, a panel's current value is compared against the recent mean/standard
+deviation of its own history (two-sided z-score: ≥2σ warns, ≥3σ is critical)
+and merges into the exact same breach pipeline fixed thresholds use — dot
+color, KPI coloring, the alerts bell (marked "⚡ adaptive" there so it's clear
+it's not a configured rule).
+
+It's bidirectional by design: with no JSON declaring whether high or low is
+"bad", the signal is simply "this is unusual for this metric lately", in
+either direction — complementary to a fixed threshold's declared business
+bound, not a replacement for it (both can be active on the same panel).
+
+The backend (`AdaptiveThresholdTracker`) records every value a `stat` panel's
+`options.valueField` returns into a bounded per-`(dataId, field)` recent-window
+reservoir (capacity 200) and attaches the resulting `{sampleCount, mean,
+stddev}` to the panel's `DataResult` as `adaptiveBaseline` — always computed,
+regardless of whether the toggle is on, since it's cheap in-memory bookkeeping
+and this way flipping the toggle needs no extra round-trip. Below 10 samples
+there's no baseline yet (too noisy to be meaningful) and the panel simply
+isn't flagged. Resets on restart, same in-memory tradeoff as the rest of
+Panopticon's stats (see "Query stats" above).
+
+`provider-showcase.json`'s "Synthetic Load % (demo)" panel
+(`demo-synthetic-load` data definition, `RAND()`-based with `cacheTtlSeconds: 0`
+so every fetch is a genuinely new sample) exists specifically to have real
+variance to demonstrate this against — most other demo `stat` panels are
+deterministic counts against static seed data, which adaptive mode correctly
+never flags (zero variance ⇒ zero stddev ⇒ no possible breach).
 
 Validate or apply a config edit without restarting the app:
 
@@ -644,7 +675,7 @@ src/main/java/com/panopticon/
 │   ├── jira/    JiraDataProvider, MockJiraClient
 │   ├── recording/  DataRecorder (JSONL), RecordingImporter + one-shot import runner
 │   ├── plan/    ExplainCapable, PlanStep, QueryPlanResult (query stats' on-demand EXPLAIN)
-│   └── stats/   QueryExecutionStatsTracker, QueryStatsSnapshot (query stats' execution history)
+│   └── stats/   QueryExecutionStatsTracker/QueryStatsSnapshot (query stats), AdaptiveThresholdTracker (adaptive thresholds' recent-value history)
 ├── runtime/     Per-panel refresh-health tracking
 └── api/         REST controllers + error handling
 
@@ -658,7 +689,7 @@ src/main/resources/
 
 config/
 ├── dashboards/  6 sample dashboards — see "Sample dashboards" above
-└── data/        33 sample data definitions backing them
+└── data/        34 sample data definitions backing them
 
 it-config/       Test-only dashboards/data for the production-like integration suite
 src/test/        Unit tests (*Test) + integration suite (*IT) — see "Development & testing"
@@ -694,10 +725,13 @@ third fixed page, reachable from the header nav on both the picker and
 monitor mode, reusing the same table markup/styling as a `table`-type panel.
 
 The bell button in the header (picker page and monitor mode) opens a dropdown
-of active fixed-threshold breaches (see "Fixed alerting thresholds" above),
-aggregated across every panel of the currently shown dashboard by
-`js/alerts.js`; the pure evaluation logic (no DOM) lives in `js/thresholds.js`
-and is invoked by `dashboard.js` on every panel refresh.
+of active threshold breaches — both fixed (see "Fixed alerting thresholds"
+above) and, if the **⚡ Adaptive** toggle next to it is on, statistical
+anomalies (see "Adaptive (statistical) thresholds" above) — aggregated across
+every panel of the currently shown dashboard by `js/alerts.js`. The pure
+evaluation logic (no DOM) for both lives in `js/thresholds.js`; the toggle's
+on/off persistence lives in `js/adaptive.js` (same localStorage pattern as
+the theme button). Both are invoked by `dashboard.js` on every panel refresh.
 
 Theming: a header button on all three pages cycles **auto → light → dark**
 (persisted in `localStorage`). Auto — the default — follows time of day

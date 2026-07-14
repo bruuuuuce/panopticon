@@ -184,6 +184,29 @@ a {
     border-color: var(--text-secondary);
 }
 
+/* ---------- Adaptive threshold toggle (see adaptive.js/thresholds.js) ---------- */
+
+.adaptive-toggle {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.adaptive-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.adaptive-toggle.active {
+    border-color: var(--series-1);
+    color: var(--series-1);
+}
+
 /* ---------- Alerts bell (fixed-threshold breaches, see thresholds.js) ---------- */
 
 .alerts-widget {
@@ -288,6 +311,13 @@ a {
 
 .alert-level-badge.level-warning { background: var(--status-warning); }
 .alert-level-badge.level-critical { background: var(--status-critical); }
+
+.alert-source-badge {
+    font-size: 10px;
+    color: var(--text-muted);
+    flex: none;
+    margin-left: auto;
+}
 
 .dashboard-meta {
     padding: 14px 20px 0;
@@ -725,6 +755,18 @@ body.monitor {
     color: var(--text-secondary);
     padding: 6px 10px;
     font-size: 14px;
+}
+
+.monitor-controls .adaptive-toggle {
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.monitor-controls .adaptive-toggle.active {
+    border-color: var(--series-1);
+    color: var(--series-1);
 }
 
 .monitor-controls .nav-link {

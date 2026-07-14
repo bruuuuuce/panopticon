@@ -1,0 +1,10 @@
+{
+  "id": "demo-synthetic-load",
+  "name": "Synthetic load (demo)",
+  "provider": "jdbc",
+  "datasource": "demo-h2",
+  "sql": "SELECT ROUND(50 + RAND() * 10, 1) AS load_pct",
+  "timeoutMs": 5000,
+  "maxRows": 1,
+  "cacheTtlSeconds": 0
+}

@@ -97,6 +97,15 @@
       "thresholds": [
         { "field": "quantity", "label": "Low quantity", "warning": 10, "critical": 5, "direction": "below" }
       ]
+    },
+    {
+      "id": "kpi-synthetic-load",
+      "title": "Synthetic Load % (demo)",
+      "type": "stat",
+      "dataRef": "demo-synthetic-load",
+      "grid": { "row": 7, "col": 1, "rowSpan": 1, "colSpan": 3 },
+      "refresh": { "intervalSeconds": 5, "enabled": true },
+      "options": { "valueField": "load_pct", "format": "decimal", "unit": "%" }
     }
   ]
 }
